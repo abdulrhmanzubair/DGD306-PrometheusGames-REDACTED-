@@ -10,6 +10,7 @@ public class PlayerController : MonoBehaviour
 
     [Header("Shooting")]
     public GameObject bulletPrefab;
+    public GameObject bullet2Prefab;
     public Transform firePoint;
     public float fireRate = 0.2f;
 
@@ -87,6 +88,14 @@ public class PlayerController : MonoBehaviour
 
             GameObject bullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.identity);
             bullet.GetComponent<Bullet>().SetDirection(aimDirection);
+        }
+
+        if (Input.GetButton("Fire2") && Time.time >= nextFireTime)
+        {
+            nextFireTime = Time.time + fireRate;
+
+            GameObject bullet2 = Instantiate(bullet2Prefab, firePoint.position, Quaternion.identity);
+            bullet2.GetComponent<Bullet>().SetDirection(aimDirection);
         }
     }
 

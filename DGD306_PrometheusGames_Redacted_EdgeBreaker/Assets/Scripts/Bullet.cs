@@ -2,20 +2,23 @@ using UnityEngine;
 
 public class Bullet : MonoBehaviour
 {
+    [Header("Bullet Settings")]
     public float speed = 15f;
     public float damage = 10f;
+    public float lifetime = 3f;
     public Sprite[] lifeStages; // Optional, for visual life progression
     public GameObject hitEffectPrefab; // Spark/explosion prefab
 
+    [Header("Shooter Tag")]
+    public string shooterTag = "Enemy"; // Set in Inspector
+
     private Vector2 direction;
     private SpriteRenderer sr;
-    private float lifetime = 3f;
     private float timer;
 
-    void Start()
+    public void SetShooter(string tag)
     {
-        sr = GetComponent<SpriteRenderer>();
-        Destroy(gameObject, lifetime); // Auto-destroy after 3 seconds
+        shooterTag = tag;
     }
 
     public void SetDirection(Vector2 dir)
@@ -25,11 +28,17 @@ public class Bullet : MonoBehaviour
         transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
     }
 
+    void Start()
+    {
+        sr = GetComponent<SpriteRenderer>();
+        Destroy(gameObject, lifetime); // Auto-destroy after lifetime
+    }
+
     void Update()
     {
         transform.Translate(direction * speed * Time.deltaTime, Space.World);
 
-        // Optional: change sprite based on lifetime
+        // Optional: change sprite based on lifetime progression
         timer += Time.deltaTime;
         if (timer >= 2f && lifeStages.Length > 2)
             sr.sprite = lifeStages[2];
@@ -39,21 +48,24 @@ public class Bullet : MonoBehaviour
             sr.sprite = lifeStages[0];
     }
 
-    private void OnTriggerEnter2D(Collider2D other)
+    void OnTriggerEnter2D(Collider2D other)
     {
-        // Check if the object has a damageable component
+        // Don't hit shooter or friendly targets
+        if (other.CompareTag(shooterTag)) return;
+
+        // Deal damage
         IDamageable damageable = other.GetComponent<IDamageable>();
         if (damageable != null)
         {
             damageable.TakeDamage(damage);
         }
 
-        // Spawn hit effect (e.g. spark or explosion)
+        // Spawn hit effect
         if (hitEffectPrefab != null)
         {
             Instantiate(hitEffectPrefab, transform.position, Quaternion.identity);
         }
 
-        Destroy(gameObject); // Destroy the bullet
+        Destroy(gameObject);
     }
 }

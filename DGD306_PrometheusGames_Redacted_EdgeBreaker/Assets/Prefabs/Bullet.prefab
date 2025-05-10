@@ -141,8 +141,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speed: 15
   damage: 10
+  lifetime: 3
   lifeStages: []
   hitEffectPrefab: {fileID: 1780990898665742232, guid: 29c53dc7e4c4c1146a94da7322a4587b, type: 3}
+  shooterTag: Player
 --- !u!95 &-957760310780712008
 Animator:
   serializedVersion: 7
