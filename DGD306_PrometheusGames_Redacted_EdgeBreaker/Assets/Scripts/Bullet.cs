@@ -53,19 +53,33 @@ public class Bullet : MonoBehaviour
         // Don't hit shooter or friendly targets
         if (other.CompareTag(shooterTag)) return;
 
-        // Deal damage
+        // Deal damage if the target is damageable
         IDamageable damageable = other.GetComponent<IDamageable>();
         if (damageable != null)
         {
             damageable.TakeDamage(damage);
         }
 
-        // Spawn hit effect
+        // Spawn hit effect if available
         if (hitEffectPrefab != null)
         {
             Instantiate(hitEffectPrefab, transform.position, Quaternion.identity);
         }
 
+        // If the enemy is destroyed, add score
+        if (other.CompareTag("Enemy")) // If it's an enemy, increase score
+        {
+            if (ScoreManager.Instance != null)
+            {
+                EnemyAI enemy = other.GetComponent<EnemyAI>();
+                if (enemy != null)
+                {
+                    ScoreManager.Instance.AddScore(enemy.scoreValue); // Assuming enemy has a scoreValue field
+                }
+            }
+        }
+
+        // Destroy the bullet after the hit
         Destroy(gameObject);
     }
 }

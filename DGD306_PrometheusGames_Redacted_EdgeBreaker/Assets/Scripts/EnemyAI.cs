@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class EnemyAI : MonoBehaviour
+public class EnemyAI : MonoBehaviour, IDamageable
 {
     [Header("References")]
     public Transform player;
@@ -18,6 +18,10 @@ public class EnemyAI : MonoBehaviour
     public float bulletSpeed = 10f;
 
     private float lastShootTime;
+
+    [Header("Enemy Stats")]
+    public int health = 100;
+    public int scoreValue = 50; // Score added when killed
 
     void Update()
     {
@@ -37,12 +41,10 @@ public class EnemyAI : MonoBehaviour
         }
 
         // === Facing ===
-        // For enemies that face left by default
         if (player.position.x > transform.position.x)
             spriteRenderer.flipX = true;
         else
             spriteRenderer.flipX = false;
-
 
         // === Shooting ===
         if (distance <= stopDistance && Time.time - lastShootTime >= shootCooldown)
@@ -64,11 +66,33 @@ public class EnemyAI : MonoBehaviour
         float angle = Mathf.Atan2(shootDir.y, shootDir.x) * Mathf.Rad2Deg;
         bullet.transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
 
-        // Assign shooter tag in inspector if needed
+        // Assign shooter tag
         Bullet bulletScript = bullet.GetComponent<Bullet>();
         if (bulletScript != null)
         {
-            bulletScript.shooterTag = "Enemy"; // Make sure bullet prefab has Bullet.cs on it
+            bulletScript.SetShooter("Enemy");
         }
+    }
+
+    // Implement IDamageable interface
+    public void TakeDamage(float amount)
+    {
+        health -= (int)amount;
+        if (health <= 0)
+        {
+            Die();
+        }
+    }
+
+    void Die()
+    {
+        // Add score when the enemy dies
+        if (ScoreManager.Instance != null)
+        {
+            ScoreManager.Instance.AddScore(scoreValue);
+        }
+
+        // Optional: play death animation/effect
+        Destroy(gameObject);
     }
 }

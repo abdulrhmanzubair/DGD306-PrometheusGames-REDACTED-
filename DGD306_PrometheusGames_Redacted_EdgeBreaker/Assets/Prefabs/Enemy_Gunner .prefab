@@ -62,7 +62,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 9.1, y: -0.05, z: 0.025809}
-  m_LocalScale: {x: -0.58988, y: 0.58988, z: 0.58988}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2247163288898578554}
@@ -231,6 +231,8 @@ MonoBehaviour:
   firePoint: {fileID: 2247163288898578554}
   shootCooldown: 1.5
   bulletSpeed: 17
+  health: 100
+  scoreValue: 50
 --- !u!1 &8618708968694623104
 GameObject:
   m_ObjectHideFlags: 0

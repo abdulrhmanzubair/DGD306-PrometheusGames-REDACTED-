@@ -15,13 +15,13 @@ public class PlayerController : MonoBehaviour
     public float fireRate = 0.2f;
 
     private Rigidbody2D rb;
-    private Animator animator;
+    Animator animator;
     private bool isGrounded;
     private float nextFireTime;
     private Vector2 moveInput;
     private Vector2 aimDirection = Vector2.right; // default right
 
-    void Awake()
+    void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
@@ -39,6 +39,8 @@ public class PlayerController : MonoBehaviour
     void FixedUpdate()
     {
         Move();
+        animator.SetFloat("xVelocity", Mathf.Abs(rb.linearVelocity.x));
+        animator.SetFloat("yVelocity", Mathf.Abs(rb.linearVelocity.y));
     }
 
     void HandleInput()
@@ -103,10 +105,12 @@ public class PlayerController : MonoBehaviour
     {
         if (animator != null)
         {
-            animator.SetFloat("Speed", Mathf.Abs(moveInput.x));
+            float xVelocity = Mathf.Abs(rb.linearVelocity.x); // actual horizontal speed
+            animator.SetFloat("Speed", xVelocity);
             animator.SetBool("isGrounded", isGrounded);
             animator.SetFloat("AimX", aimDirection.x);
             animator.SetFloat("AimY", aimDirection.y);
         }
     }
+
 }
