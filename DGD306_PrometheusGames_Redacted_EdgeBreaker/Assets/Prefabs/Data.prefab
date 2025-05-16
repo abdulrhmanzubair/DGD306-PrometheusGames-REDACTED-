@@ -10,8 +10,8 @@ GameObject:
   m_Component:
   - component: {fileID: 134733870785622516}
   - component: {fileID: 6985150974497609913}
-  - component: {fileID: 2130366914193009532}
   - component: {fileID: 5469364470311039416}
+  - component: {fileID: 7669125032421030749}
   m_Layer: 0
   m_Name: Data
   m_TagString: Player
@@ -89,19 +89,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!114 &2130366914193009532
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3661759832574529293}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eed819750436b8647bf39a7efbdb48ab, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  scoreValue: 500
 --- !u!58 &5469364470311039416
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -138,3 +125,16 @@ CircleCollider2D:
   m_CompositeOrder: 0
   m_Offset: {x: 0.14304543, y: -0.010284424}
   m_Radius: 0.81003666
+--- !u!114 &7669125032421030749
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3661759832574529293}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a7e4ab8104e53b745b4edd63ddfc05e6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dataValue: 100

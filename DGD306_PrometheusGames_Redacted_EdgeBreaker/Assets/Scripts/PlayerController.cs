@@ -15,11 +15,14 @@ public class PlayerController : MonoBehaviour
     public float fireRate = 0.2f;
 
     private Rigidbody2D rb;
-    Animator animator;
+    private Animator animator;
     private bool isGrounded;
     private float nextFireTime;
     private Vector2 moveInput;
-    private Vector2 aimDirection = Vector2.right; // default right
+    private Vector2 aimDirection = Vector2.right;
+
+    public float fallMultiplier = 2.5f;
+    public float lowJumpMultiplier = 2f;
 
     void Start()
     {
@@ -39,8 +42,7 @@ public class PlayerController : MonoBehaviour
     void FixedUpdate()
     {
         Move();
-        animator.SetFloat("xVelocity", Mathf.Abs(rb.linearVelocity.x));
-        animator.SetFloat("yVelocity", Mathf.Abs(rb.linearVelocity.y));
+        ApplyBetterJump();
     }
 
     void HandleInput()
@@ -48,20 +50,16 @@ public class PlayerController : MonoBehaviour
         float moveX = Input.GetAxisRaw("Horizontal");
         float aimY = Input.GetAxisRaw("Vertical");
 
-        moveInput = new Vector2(moveX, 0).normalized;
+        moveInput = new Vector2(moveX, 0f).normalized;
 
-        // Update aim direction based on input
+        // Update aim direction
         Vector2 rawAim = new Vector2(moveX, aimY);
         if (rawAim != Vector2.zero)
-        {
             aimDirection = rawAim.normalized;
-        }
 
-        // Flip sprite based on movement
+        // Flip sprite
         if (moveX != 0)
-        {
             transform.localScale = new Vector3(Mathf.Sign(moveX), 1, 1);
-        }
     }
 
     void Move()
@@ -81,23 +79,37 @@ public class PlayerController : MonoBehaviour
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
         }
     }
+    void ApplyBetterJump()
+    {
+        if (rb.linearVelocity.y < 0)
+        {
+            // Faster fall
+            rb.linearVelocity += Vector2.up * Physics2D.gravity.y * (fallMultiplier - 1) * Time.fixedDeltaTime;
+        }
+        else if (rb.linearVelocity.y > 0 && !Input.GetButton("Jump"))
+        {
+            // Short hop if jump button released early
+            rb.linearVelocity += Vector2.up * Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.fixedDeltaTime;
+        }
+    }
+
 
     void HandleShooting()
     {
-        if (Input.GetButton("Fire1") && Time.time >= nextFireTime)
+        if (Time.time >= nextFireTime)
         {
-            nextFireTime = Time.time + fireRate;
-
-            GameObject bullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.identity);
-            bullet.GetComponent<Bullet>().SetDirection(aimDirection);
-        }
-
-        if (Input.GetButton("Fire2") && Time.time >= nextFireTime)
-        {
-            nextFireTime = Time.time + fireRate;
-
-            GameObject bullet2 = Instantiate(bullet2Prefab, firePoint.position, Quaternion.identity);
-            bullet2.GetComponent<Bullet>().SetDirection(aimDirection);
+            if (Input.GetButton("Fire1"))
+            {
+                nextFireTime = Time.time + fireRate;
+                GameObject bullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.identity);
+                bullet.GetComponent<Bullet>().SetDirection(aimDirection);
+            }
+            else if (Input.GetButton("Fire2"))
+            {
+                nextFireTime = Time.time + fireRate;
+                GameObject bullet2 = Instantiate(bullet2Prefab, firePoint.position, Quaternion.identity);
+                bullet2.GetComponent<Bullet>().SetDirection(aimDirection);
+            }
         }
     }
 
@@ -105,12 +117,16 @@ public class PlayerController : MonoBehaviour
     {
         if (animator != null)
         {
-            float xVelocity = Mathf.Abs(rb.linearVelocity.x); // actual horizontal speed
-            animator.SetFloat("Speed", xVelocity);
+            float xVel = Mathf.Abs(rb.linearVelocity.x);
+            float yVel = rb.linearVelocity.y;
+
+            animator.SetFloat("xVelocity", xVel);
+            animator.SetFloat("yVelocity", yVel);
             animator.SetBool("isGrounded", isGrounded);
-            animator.SetFloat("AimX", aimDirection.x);
-            animator.SetFloat("AimY", aimDirection.y);
+
+            // Jumping logic: true if not grounded and upward velocity
+            bool isJumping = !isGrounded && yVel > 0.1f;
+            animator.SetBool("isJumping", isJumping);
         }
     }
-
 }
