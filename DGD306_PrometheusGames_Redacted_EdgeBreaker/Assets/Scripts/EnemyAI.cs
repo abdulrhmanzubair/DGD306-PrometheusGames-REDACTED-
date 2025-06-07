@@ -3,13 +3,15 @@ using UnityEngine;
 public class EnemyAI : MonoBehaviour, IDamageable
 {
     [Header("References")]
-    public Transform player;
     public Rigidbody2D rb;
     public SpriteRenderer spriteRenderer;
 
     [Header("Movement")]
     public float moveSpeed = 2f;
     public float stopDistance = 5f;
+
+    [Header("Detection")]
+    public float detectionRadius = 10f;
 
     [Header("Shooting")]
     public GameObject bulletPrefab;
@@ -21,32 +23,43 @@ public class EnemyAI : MonoBehaviour, IDamageable
 
     [Header("Enemy Stats")]
     public int health = 100;
-    public int scoreValue = 50; // Score added when killed
+    public int scoreValue = 50;
+
+    private Transform currentTarget;
+    private bool hasTarget = false;
+    public event System.Action OnEnemyDeath;
+
 
     void Update()
     {
-        if (!player) return;
+        if (!hasTarget || currentTarget == null)
+        {
+            SearchForTarget();
+        }
 
-        float distance = Vector2.Distance(transform.position, player.position);
+        if (currentTarget == null)
+        {
+            rb.linearVelocity = Vector2.zero;
+            hasTarget = false;
+            return;
+        }
 
-        // === Movement ===
+        float distance = Vector2.Distance(transform.position, currentTarget.position);
+
+        // Movement & Facing
         if (distance > stopDistance)
         {
-            Vector2 direction = (player.position - transform.position).normalized;
+            Vector2 direction = (currentTarget.position - transform.position).normalized;
             rb.linearVelocity = new Vector2(direction.x * moveSpeed, rb.linearVelocity.y);
         }
         else
         {
-            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y); // Stop when in range
+            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
         }
 
-        // === Facing ===
-        if (player.position.x > transform.position.x)
-            spriteRenderer.flipX = true;
-        else
-            spriteRenderer.flipX = false;
+        spriteRenderer.flipX = currentTarget.position.x > transform.position.x;
 
-        // === Shooting ===
+        // Shooting if in range and cooldown passed
         if (distance <= stopDistance && Time.time - lastShootTime >= shootCooldown)
         {
             Shoot();
@@ -54,19 +67,47 @@ public class EnemyAI : MonoBehaviour, IDamageable
         }
     }
 
+    void SearchForTarget()
+    {
+        GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
+        float closestDistance = Mathf.Infinity;
+        Transform closestPlayer = null;
+
+        foreach (GameObject player in players)
+        {
+            float dist = Vector2.Distance(transform.position, player.transform.position);
+            if (dist <= detectionRadius && dist < closestDistance)
+            {
+                closestDistance = dist;
+                closestPlayer = player.transform;
+            }
+        }
+
+        if (closestPlayer != null)
+        {
+            currentTarget = closestPlayer;
+            hasTarget = true;
+        }
+        else
+        {
+            currentTarget = null;
+            hasTarget = false;
+        }
+    }
+
     void Shoot()
     {
-        Vector2 shootDir = (player.position - firePoint.position).normalized;
+        if (bulletPrefab == null || firePoint == null) return;
+
+        Vector2 shootDir = (currentTarget.position - firePoint.position).normalized;
 
         GameObject bullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.identity);
         Rigidbody2D bulletRb = bullet.GetComponent<Rigidbody2D>();
         bulletRb.linearVelocity = shootDir * bulletSpeed;
 
-        // Rotate bullet to match direction
         float angle = Mathf.Atan2(shootDir.y, shootDir.x) * Mathf.Rad2Deg;
         bullet.transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
 
-        // Assign shooter tag
         Bullet bulletScript = bullet.GetComponent<Bullet>();
         if (bulletScript != null)
         {
@@ -74,7 +115,6 @@ public class EnemyAI : MonoBehaviour, IDamageable
         }
     }
 
-    // Implement IDamageable interface
     public void TakeDamage(float amount)
     {
         health -= (int)amount;
@@ -86,13 +126,19 @@ public class EnemyAI : MonoBehaviour, IDamageable
 
     void Die()
     {
-        // Add score when the enemy dies
+        OnEnemyDeath?.Invoke();
+
         if (ScoreManager.Instance != null)
         {
             ScoreManager.Instance.AddScore(scoreValue);
         }
 
-        // Optional: play death animation/effect
         Destroy(gameObject);
+    }
+
+    void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, detectionRadius);
     }
 }

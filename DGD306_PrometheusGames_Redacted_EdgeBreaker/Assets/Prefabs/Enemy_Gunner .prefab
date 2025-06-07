@@ -222,15 +222,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 80895c35055be4248b4b4813344fa4af, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  player: {fileID: 0}
   rb: {fileID: 1045581334063107790}
   spriteRenderer: {fileID: 4440445852997806918}
-  moveSpeed: 12
+  moveSpeed: 15
   stopDistance: 12
+  detectionRadius: 18
   bulletPrefab: {fileID: 3092579064342640799, guid: 9d2d037367c4a914096d79d70a8a8ba2, type: 3}
   firePoint: {fileID: 2247163288898578554}
-  shootCooldown: 1.5
-  bulletSpeed: 17
+  shootCooldown: 0.8
+  bulletSpeed: 25
   health: 100
   scoreValue: 50
 --- !u!1 &8618708968694623104

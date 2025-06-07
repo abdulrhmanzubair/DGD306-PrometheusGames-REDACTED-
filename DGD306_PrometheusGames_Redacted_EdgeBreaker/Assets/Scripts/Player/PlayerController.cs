@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class PlayerController : MonoBehaviour
 {
@@ -14,25 +15,58 @@ public class PlayerController : MonoBehaviour
     public Transform firePoint;
     public float fireRate = 0.2f;
 
+    [Header("Jump Tuning")]
+    public float fallMultiplier = 2.5f;
+    public float lowJumpMultiplier = 2f;
+
     private Rigidbody2D rb;
     private Animator animator;
     private bool isGrounded;
     private float nextFireTime;
+
     private Vector2 moveInput;
-    private Vector2 aimDirection = Vector2.right;
+    private Vector2 aimInput;
+    private bool jumpPressed;
+    private bool fire1Pressed;
+    private bool fire2Pressed;
 
-    public float fallMultiplier = 2.5f;
-    public float lowJumpMultiplier = 2f;
+    private PlayerInputActions inputActions;
 
-    void Start()
+    void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
+
+        inputActions = new PlayerInputActions();
+
+        inputActions.Player.Move.performed += ctx => moveInput = ctx.ReadValue<Vector2>();
+        inputActions.Player.Move.canceled += ctx => moveInput = Vector2.zero;
+
+        inputActions.Player.Aim.performed += ctx => aimInput = ctx.ReadValue<Vector2>();
+        inputActions.Player.Aim.canceled += ctx => aimInput = Vector2.right;
+
+        inputActions.Player.Jump.performed += ctx => jumpPressed = true;
+        inputActions.Player.Jump.canceled += ctx => jumpPressed = false;
+
+        inputActions.Player.Fire1.performed += ctx => fire1Pressed = true;
+        inputActions.Player.Fire1.canceled += ctx => fire1Pressed = false;
+
+        inputActions.Player.Fire2.performed += ctx => fire2Pressed = true;
+        inputActions.Player.Fire2.canceled += ctx => fire2Pressed = false;
+    }
+
+    void OnEnable()
+    {
+        inputActions.Enable();
+    }
+
+    void OnDisable()
+    {
+        inputActions.Disable();
     }
 
     void Update()
     {
-        HandleInput();
         CheckGrounded();
         HandleJumping();
         HandleShooting();
@@ -45,26 +79,12 @@ public class PlayerController : MonoBehaviour
         ApplyBetterJump();
     }
 
-    void HandleInput()
-    {
-        float moveX = Input.GetAxisRaw("Horizontal");
-        float aimY = Input.GetAxisRaw("Vertical");
-
-        moveInput = new Vector2(moveX, 0f).normalized;
-
-        // Update aim direction
-        Vector2 rawAim = new Vector2(moveX, aimY);
-        if (rawAim != Vector2.zero)
-            aimDirection = rawAim.normalized;
-
-        // Flip sprite
-        if (moveX != 0)
-            transform.localScale = new Vector3(Mathf.Sign(moveX), 1, 1);
-    }
-
     void Move()
     {
         rb.linearVelocity = new Vector2(moveInput.x * moveSpeed, rb.linearVelocity.y);
+
+        if (moveInput.x != 0)
+            transform.localScale = new Vector3(Mathf.Sign(moveInput.x), 1, 1);
     }
 
     void CheckGrounded()
@@ -74,59 +94,56 @@ public class PlayerController : MonoBehaviour
 
     void HandleJumping()
     {
-        if (Input.GetButtonDown("Jump") && isGrounded)
+        if (jumpPressed && isGrounded)
         {
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
         }
     }
+
     void ApplyBetterJump()
     {
         if (rb.linearVelocity.y < 0)
         {
-            // Faster fall
             rb.linearVelocity += Vector2.up * Physics2D.gravity.y * (fallMultiplier - 1) * Time.fixedDeltaTime;
         }
-        else if (rb.linearVelocity.y > 0 && !Input.GetButton("Jump"))
+        else if (rb.linearVelocity.y > 0 && !jumpPressed)
         {
-            // Short hop if jump button released early
             rb.linearVelocity += Vector2.up * Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.fixedDeltaTime;
         }
     }
-
 
     void HandleShooting()
     {
         if (Time.time >= nextFireTime)
         {
-            if (Input.GetButton("Fire1"))
+            if (fire1Pressed)
             {
                 nextFireTime = Time.time + fireRate;
                 GameObject bullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.identity);
-                bullet.GetComponent<Bullet>().SetDirection(aimDirection);
+                bullet.GetComponent<Bullet>().SetDirection(GetAimDirection());
             }
-            else if (Input.GetButton("Fire2"))
+            else if (fire2Pressed)
             {
                 nextFireTime = Time.time + fireRate;
                 GameObject bullet2 = Instantiate(bullet2Prefab, firePoint.position, Quaternion.identity);
-                bullet2.GetComponent<Bullet>().SetDirection(aimDirection);
+                bullet2.GetComponent<Bullet>().SetDirection(GetAimDirection());
             }
         }
+    }
+
+    Vector2 GetAimDirection()
+    {
+        return aimInput != Vector2.zero ? aimInput.normalized : (Vector2)transform.right;
     }
 
     void UpdateAnimator()
     {
         if (animator != null)
         {
-            float xVel = Mathf.Abs(rb.linearVelocity.x);
-            float yVel = rb.linearVelocity.y;
-
-            animator.SetFloat("xVelocity", xVel);
-            animator.SetFloat("yVelocity", yVel);
+            animator.SetFloat("xVelocity", Mathf.Abs(rb.linearVelocity.x));
+            animator.SetFloat("yVelocity", rb.linearVelocity.y);
             animator.SetBool("isGrounded", isGrounded);
-
-            // Jumping logic: true if not grounded and upward velocity
-            bool isJumping = !isGrounded && yVel > 0.1f;
-            animator.SetBool("isJumping", isJumping);
+            animator.SetBool("isJumping", !isGrounded && rb.linearVelocity.y > 0.1f);
         }
     }
 }
