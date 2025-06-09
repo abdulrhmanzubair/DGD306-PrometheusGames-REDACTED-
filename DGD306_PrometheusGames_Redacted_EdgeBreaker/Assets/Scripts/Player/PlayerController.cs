@@ -73,6 +73,17 @@ public class PlayerController : MonoBehaviour
         UpdateAnimator();
     }
 
+    public void Initialize(int playerIndex)
+    {
+        // Set up input scheme
+        GetComponent<PlayerInput>().SwitchCurrentControlScheme(
+            playerIndex == 0 ? "Player1" : "Player2",
+            Keyboard.current,
+            Gamepad.current
+        );
+
+       
+    }
     void FixedUpdate()
     {
         Move();

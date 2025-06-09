@@ -88,6 +88,17 @@ public class Player_Melee_Controller1 : MonoBehaviour
         ApplyBetterJump();
     }
 
+    public void Initialize(int playerIndex)
+    {
+        // Set up input scheme
+        GetComponent<PlayerInput>().SwitchCurrentControlScheme(
+            playerIndex == 0 ? "Player1" : "Player2",
+            Keyboard.current,
+            Gamepad.current
+        );
+
+       
+    }
     void Move()
     {
         rb.linearVelocity = new Vector2(moveInput.x * moveSpeed, rb.linearVelocity.y);

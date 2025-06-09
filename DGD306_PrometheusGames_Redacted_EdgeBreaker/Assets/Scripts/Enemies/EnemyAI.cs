@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class EnemyAI : MonoBehaviour, IDamageable
 {
@@ -28,8 +29,25 @@ public class EnemyAI : MonoBehaviour, IDamageable
     private Transform currentTarget;
     private bool hasTarget = false;
     public event System.Action OnEnemyDeath;
+    private Animator animator;
 
+    private void Start()
+    {
+        animator = GetComponent<Animator>();
+    }
+    private IEnumerator DeathDelay()
+    {
+        if (animator != null)
+        {
+            animator.SetBool("IsDead", true); // or SetTrigger("Die") if using a trigger
+        }
 
+        rb.linearVelocity = Vector2.zero;
+
+        yield return new WaitForSeconds(1.2f); // Wait for death animation to finish
+
+        Destroy(gameObject); // Remove enemy after animation
+    }
     void Update()
     {
         if (!hasTarget || currentTarget == null)
@@ -65,6 +83,16 @@ public class EnemyAI : MonoBehaviour, IDamageable
             Shoot();
             lastShootTime = Time.time;
         }
+
+        //animations
+
+        float currentSpeed = Mathf.Abs(rb.linearVelocity.x);
+        if (animator != null)
+        {
+            animator.SetFloat("Speed", currentSpeed);
+        }
+
+
     }
 
     void SearchForTarget()
@@ -133,7 +161,7 @@ public class EnemyAI : MonoBehaviour, IDamageable
             ScoreManager.Instance.AddScore(scoreValue);
         }
 
-        Destroy(gameObject);
+        StartCoroutine(DeathDelay()); // delay destroy to let anim play
     }
 
     void OnDrawGizmosSelected()
