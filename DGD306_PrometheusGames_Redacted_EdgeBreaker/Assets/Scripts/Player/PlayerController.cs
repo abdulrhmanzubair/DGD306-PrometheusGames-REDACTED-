@@ -82,7 +82,7 @@ public class PlayerController : MonoBehaviour
             Gamepad.current
         );
 
-       
+
     }
     void FixedUpdate()
     {

@@ -226,14 +226,16 @@ MonoBehaviour:
   rb: {fileID: 1045581334063107790}
   spriteRenderer: {fileID: 4440445852997806918}
   moveSpeed: 15
-  stopDistance: 12
-  detectionRadius: 18
+  stopDistance: 40
+  detectionRadius: 50
   bulletPrefab: {fileID: 3092579064342640799, guid: 9d2d037367c4a914096d79d70a8a8ba2, type: 3}
   firePoint: {fileID: 2247163288898578554}
   shootCooldown: 0.8
   bulletSpeed: 25
   health: 100
   scoreValue: 50
+  deathSpritePrefab: {fileID: 7200185586053467219, guid: 73e002f4848f73341a6ed1ed6424abea, type: 3}
+  deathSpriteLifetime: 1
 --- !u!95 &8676658494272626383
 Animator:
   serializedVersion: 7

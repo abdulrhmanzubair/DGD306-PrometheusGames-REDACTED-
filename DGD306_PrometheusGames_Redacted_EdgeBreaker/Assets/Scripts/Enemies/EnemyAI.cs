@@ -31,6 +31,9 @@ public class EnemyAI : MonoBehaviour, IDamageable
     public event System.Action OnEnemyDeath;
     private Animator animator;
 
+    [Header("Death Visual")]
+    public GameObject deathSpritePrefab;   // Assign in Inspector
+    public float deathSpriteLifetime = 2f; // Customize per enemy
     private void Start()
     {
         animator = GetComponent<Animator>();
@@ -154,6 +157,11 @@ public class EnemyAI : MonoBehaviour, IDamageable
 
     void Die()
     {
+        StartCoroutine(DeathSequence());
+    }
+
+    private IEnumerator DeathSequence()
+    {
         OnEnemyDeath?.Invoke();
 
         if (ScoreManager.Instance != null)
@@ -161,7 +169,14 @@ public class EnemyAI : MonoBehaviour, IDamageable
             ScoreManager.Instance.AddScore(scoreValue);
         }
 
-        StartCoroutine(DeathDelay()); // delay destroy to let anim play
+        if (deathSpritePrefab != null)
+        {
+            GameObject deathVisual = Instantiate(deathSpritePrefab, transform.position, Quaternion.identity);
+            Destroy(deathVisual, deathSpriteLifetime);
+        }
+
+        yield return new WaitForSeconds(deathSpriteLifetime);
+        Destroy(gameObject);
     }
 
     void OnDrawGizmosSelected()
