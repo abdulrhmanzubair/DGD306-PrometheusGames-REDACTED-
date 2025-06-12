@@ -7,7 +7,7 @@ TagManager:
   - Ground
   - Enemy
   - EnemyProjectile
-  - Data
+  - PlayerColorable
   layers:
   - Default
   - TransparentFX

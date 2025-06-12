@@ -39,37 +39,140 @@ public class Player_Melee_Controller1 : MonoBehaviour
     private bool isDashing = false;
     private float dashEndTime;
 
-    // Input system
-    private PlayerInputActions inputActions;
+    // Updated input system - use PlayerInput component
+    private PlayerInput playerInput;
     private bool jumpPressed;
     private bool dashPressed;
     private bool guardPressed;
+
+    public int PlayerIndex { get; set; }
 
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
-
-        inputActions = new PlayerInputActions();
-
-        inputActions.Player.Move.performed += ctx => moveInput = ctx.ReadValue<Vector2>();
-        inputActions.Player.Move.canceled += ctx => moveInput = Vector2.zero;
-
-        inputActions.Player.Aim.performed += ctx => aimDirection = ctx.ReadValue<Vector2>();
-        inputActions.Player.Aim.canceled += ctx => aimDirection = Vector2.right;
-
-        inputActions.Player.Jump.performed += ctx => jumpPressed = true;
-        inputActions.Player.Jump.canceled += ctx => jumpPressed = false;
-
-        inputActions.Player.Dash.performed += ctx => dashPressed = true;
-        inputActions.Player.Dash.canceled += ctx => dashPressed = false;
-
-        inputActions.Player.Guard.performed += ctx => guardPressed = true;
-        inputActions.Player.Guard.canceled += ctx => guardPressed = false;
     }
 
-    void OnEnable() => inputActions.Enable();
-    void OnDisable() => inputActions.Disable();
+    void Start()
+    {
+        // Get the PlayerInput component that was set up by the spawner
+        playerInput = GetComponent<PlayerInput>();
+
+        if (playerInput == null)
+        {
+            // If no PlayerInput on this object, find the one with matching index
+            PlayerInput[] allInputs = FindObjectsOfType<PlayerInput>();
+            foreach (var input in allInputs)
+            {
+                if (input.playerIndex == PlayerIndex)
+                {
+                    playerInput = input;
+                    break;
+                }
+            }
+        }
+
+        if (playerInput != null)
+        {
+            Debug.Log($"MeleeController - PlayerIndex: {PlayerIndex}, PlayerInput found with index: {playerInput.playerIndex}");
+
+            // Set up input callbacks using the PlayerInput's actions
+            var moveAction = playerInput.actions["Move"];
+            var aimAction = playerInput.actions["Aim"];
+            var jumpAction = playerInput.actions["Jump"];
+            var dashAction = playerInput.actions["Dash"];
+            var guardAction = playerInput.actions["Guard"];
+
+            if (moveAction != null)
+            {
+                moveAction.performed += OnMove;
+                moveAction.canceled += OnMoveCancel;
+            }
+
+            if (aimAction != null)
+            {
+                aimAction.performed += OnAim;
+                aimAction.canceled += OnAimCancel;
+            }
+
+            if (jumpAction != null)
+            {
+                jumpAction.performed += OnJump;
+                jumpAction.canceled += OnJumpCancel;
+            }
+
+            if (dashAction != null)
+            {
+                dashAction.performed += OnDash;
+                dashAction.canceled += OnDashCancel;
+            }
+
+            if (guardAction != null)
+            {
+                guardAction.performed += OnGuard;
+                guardAction.canceled += OnGuardCancel;
+            }
+        }
+        else
+        {
+            Debug.LogError($"MeleeController - No PlayerInput found for PlayerIndex: {PlayerIndex}");
+        }
+    }
+
+    void OnDestroy()
+    {
+        // Clean up input callbacks
+        if (playerInput != null)
+        {
+            var moveAction = playerInput.actions["Move"];
+            var aimAction = playerInput.actions["Aim"];
+            var jumpAction = playerInput.actions["Jump"];
+            var dashAction = playerInput.actions["Dash"];
+            var guardAction = playerInput.actions["Guard"];
+
+            if (moveAction != null)
+            {
+                moveAction.performed -= OnMove;
+                moveAction.canceled -= OnMoveCancel;
+            }
+
+            if (aimAction != null)
+            {
+                aimAction.performed -= OnAim;
+                aimAction.canceled -= OnAimCancel;
+            }
+
+            if (jumpAction != null)
+            {
+                jumpAction.performed -= OnJump;
+                jumpAction.canceled -= OnJumpCancel;
+            }
+
+            if (dashAction != null)
+            {
+                dashAction.performed -= OnDash;
+                dashAction.canceled -= OnDashCancel;
+            }
+
+            if (guardAction != null)
+            {
+                guardAction.performed -= OnGuard;
+                guardAction.canceled -= OnGuardCancel;
+            }
+        }
+    }
+
+    // Input callback methods
+    private void OnMove(InputAction.CallbackContext context) => moveInput = context.ReadValue<Vector2>();
+    private void OnMoveCancel(InputAction.CallbackContext context) => moveInput = Vector2.zero;
+    private void OnAim(InputAction.CallbackContext context) => aimDirection = context.ReadValue<Vector2>();
+    private void OnAimCancel(InputAction.CallbackContext context) => aimDirection = Vector2.right;
+    private void OnJump(InputAction.CallbackContext context) => jumpPressed = true;
+    private void OnJumpCancel(InputAction.CallbackContext context) => jumpPressed = false;
+    private void OnDash(InputAction.CallbackContext context) => dashPressed = true;
+    private void OnDashCancel(InputAction.CallbackContext context) => dashPressed = false;
+    private void OnGuard(InputAction.CallbackContext context) => guardPressed = true;
+    private void OnGuardCancel(InputAction.CallbackContext context) => guardPressed = false;
 
     void Update()
     {
@@ -90,15 +193,10 @@ public class Player_Melee_Controller1 : MonoBehaviour
 
     public void Initialize(int playerIndex)
     {
-        // Set up input scheme
-        GetComponent<PlayerInput>().SwitchCurrentControlScheme(
-            playerIndex == 0 ? "Player1" : "Player2",
-            Keyboard.current,
-            Gamepad.current
-        );
-
-
+        PlayerIndex = playerIndex;
+        Debug.Log($"MeleeController initialized with PlayerIndex: {playerIndex}");
     }
+
     void Move()
     {
         rb.linearVelocity = new Vector2(moveInput.x * moveSpeed, rb.linearVelocity.y);

@@ -3,6 +3,9 @@ using UnityEngine.InputSystem;
 
 public class PlayerController : MonoBehaviour
 {
+    public int PlayerIndex { get; set; }
+    private PlayerInput playerInput;
+
     [Header("Movement")]
     public float moveSpeed = 5f;
     public float jumpForce = 12f;
@@ -25,45 +28,137 @@ public class PlayerController : MonoBehaviour
     private float nextFireTime;
 
     private Vector2 moveInput;
-    private Vector2 aimInput;
+    private Vector2 aimInput = Vector2.right;
     private bool jumpPressed;
     private bool fire1Pressed;
     private bool fire2Pressed;
-
-    private PlayerInputActions inputActions;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
-
-        inputActions = new PlayerInputActions();
-
-        inputActions.Player.Move.performed += ctx => moveInput = ctx.ReadValue<Vector2>();
-        inputActions.Player.Move.canceled += ctx => moveInput = Vector2.zero;
-
-        inputActions.Player.Aim.performed += ctx => aimInput = ctx.ReadValue<Vector2>();
-        inputActions.Player.Aim.canceled += ctx => aimInput = Vector2.right;
-
-        inputActions.Player.Jump.performed += ctx => jumpPressed = true;
-        inputActions.Player.Jump.canceled += ctx => jumpPressed = false;
-
-        inputActions.Player.Fire1.performed += ctx => fire1Pressed = true;
-        inputActions.Player.Fire1.canceled += ctx => fire1Pressed = false;
-
-        inputActions.Player.Fire2.performed += ctx => fire2Pressed = true;
-        inputActions.Player.Fire2.canceled += ctx => fire2Pressed = false;
     }
 
-    void OnEnable()
+    void Start()
     {
-        inputActions.Enable();
+        // Get the PlayerInput component that was set up by the spawner
+        playerInput = GetComponent<PlayerInput>();
+
+        if (playerInput == null)
+        {
+            // If no PlayerInput on this object, find the one with matching index
+            PlayerInput[] allInputs = FindObjectsOfType<PlayerInput>();
+            foreach (var input in allInputs)
+            {
+                if (input.playerIndex == PlayerIndex)
+                {
+                    playerInput = input;
+                    break;
+                }
+            }
+        }
+
+        if (playerInput != null)
+        {
+            Debug.Log($"GunnerController - PlayerIndex: {PlayerIndex}, PlayerInput found with index: {playerInput.playerIndex}");
+
+            // Set up input callbacks using the PlayerInput's actions
+            var moveAction = playerInput.actions["Move"];
+            var aimAction = playerInput.actions["Aim"];
+            var jumpAction = playerInput.actions["Jump"];
+            var fire1Action = playerInput.actions["Fire1"];
+            var fire2Action = playerInput.actions["Fire2"];
+
+            if (moveAction != null)
+            {
+                moveAction.performed += OnMove;
+                moveAction.canceled += OnMoveCancel;
+            }
+
+            if (aimAction != null)
+            {
+                aimAction.performed += OnAim;
+                aimAction.canceled += OnAimCancel;
+            }
+
+            if (jumpAction != null)
+            {
+                jumpAction.performed += OnJump;
+                jumpAction.canceled += OnJumpCancel;
+            }
+
+            if (fire1Action != null)
+            {
+                fire1Action.performed += OnFire1;
+                fire1Action.canceled += OnFire1Cancel;
+            }
+
+            if (fire2Action != null)
+            {
+                fire2Action.performed += OnFire2;
+                fire2Action.canceled += OnFire2Cancel;
+            }
+        }
+        else
+        {
+            Debug.LogError($"GunnerController - No PlayerInput found for PlayerIndex: {PlayerIndex}");
+        }
     }
 
-    void OnDisable()
+    void OnDestroy()
     {
-        inputActions.Disable();
+        // Clean up input callbacks
+        if (playerInput != null)
+        {
+            var moveAction = playerInput.actions["Move"];
+            var aimAction = playerInput.actions["Aim"];
+            var jumpAction = playerInput.actions["Jump"];
+            var fire1Action = playerInput.actions["Fire1"];
+            var fire2Action = playerInput.actions["Fire2"];
+
+            if (moveAction != null)
+            {
+                moveAction.performed -= OnMove;
+                moveAction.canceled -= OnMoveCancel;
+            }
+
+            if (aimAction != null)
+            {
+                aimAction.performed -= OnAim;
+                aimAction.canceled -= OnAimCancel;
+            }
+
+            if (jumpAction != null)
+            {
+                jumpAction.performed -= OnJump;
+                jumpAction.canceled -= OnJumpCancel;
+            }
+
+            if (fire1Action != null)
+            {
+                fire1Action.performed -= OnFire1;
+                fire1Action.canceled -= OnFire1Cancel;
+            }
+
+            if (fire2Action != null)
+            {
+                fire2Action.performed -= OnFire2;
+                fire2Action.canceled -= OnFire2Cancel;
+            }
+        }
     }
+
+    // Input callback methods
+    private void OnMove(InputAction.CallbackContext context) => moveInput = context.ReadValue<Vector2>();
+    private void OnMoveCancel(InputAction.CallbackContext context) => moveInput = Vector2.zero;
+    private void OnAim(InputAction.CallbackContext context) => aimInput = context.ReadValue<Vector2>();
+    private void OnAimCancel(InputAction.CallbackContext context) => aimInput = Vector2.right;
+    private void OnJump(InputAction.CallbackContext context) => jumpPressed = true;
+    private void OnJumpCancel(InputAction.CallbackContext context) => jumpPressed = false;
+    private void OnFire1(InputAction.CallbackContext context) => fire1Pressed = true;
+    private void OnFire1Cancel(InputAction.CallbackContext context) => fire1Pressed = false;
+    private void OnFire2(InputAction.CallbackContext context) => fire2Pressed = true;
+    private void OnFire2Cancel(InputAction.CallbackContext context) => fire2Pressed = false;
 
     void Update()
     {
@@ -75,15 +170,10 @@ public class PlayerController : MonoBehaviour
 
     public void Initialize(int playerIndex)
     {
-        // Set up input scheme
-        GetComponent<PlayerInput>().SwitchCurrentControlScheme(
-            playerIndex == 0 ? "Player1" : "Player2",
-            Keyboard.current,
-            Gamepad.current
-        );
-
-
+        PlayerIndex = playerIndex;
+        Debug.Log($"GunnerController initialized with PlayerIndex: {playerIndex}");
     }
+
     void FixedUpdate()
     {
         Move();
@@ -108,6 +198,7 @@ public class PlayerController : MonoBehaviour
         if (jumpPressed && isGrounded)
         {
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+            jumpPressed = false;
         }
     }
 
@@ -132,12 +223,14 @@ public class PlayerController : MonoBehaviour
                 nextFireTime = Time.time + fireRate;
                 GameObject bullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.identity);
                 bullet.GetComponent<Bullet>().SetDirection(GetAimDirection());
+                fire1Pressed = false;
             }
             else if (fire2Pressed)
             {
                 nextFireTime = Time.time + fireRate;
                 GameObject bullet2 = Instantiate(bullet2Prefab, firePoint.position, Quaternion.identity);
                 bullet2.GetComponent<Bullet>().SetDirection(GetAimDirection());
+                fire2Pressed = false;
             }
         }
     }
