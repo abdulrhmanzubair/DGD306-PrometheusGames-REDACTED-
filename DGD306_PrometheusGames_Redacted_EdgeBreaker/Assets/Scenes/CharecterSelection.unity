@@ -287,6 +287,14 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8642090004789708211, guid: c622c1069e5afdd4f80b50f03ca1e141, type: 3}
+      propertyPath: m_MaxPlayerCount
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8642090004789708211, guid: c622c1069e5afdd4f80b50f03ca1e141, type: 3}
+      propertyPath: m_NotificationBehavior
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8642090004789708211, guid: c622c1069e5afdd4f80b50f03ca1e141, type: 3}
       propertyPath: m_JoinAction.m_Reference
       value: 
       objectReference: {fileID: 1120369429361536294, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
@@ -447,6 +455,62 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2229619227062992971, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2229619227062992971, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
+      propertyPath: readyPrompt
+      value: 
+      objectReference: {fileID: 754624436}
+    - target: {fileID: 2229619227062992971, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
+      propertyPath: player1SelectionUI
+      value: 
+      objectReference: {fileID: 1219899650}
+    - target: {fileID: 2229619227062992971, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
+      propertyPath: player2SelectionUI
+      value: 
+      objectReference: {fileID: 1861403126}
+    - target: {fileID: 2229619227062992971, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
+      propertyPath: availableCharacters.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2229619227062992971, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
+      propertyPath: availableCharacters.Array.data[0].name
+      value: Gunner
+      objectReference: {fileID: 0}
+    - target: {fileID: 2229619227062992971, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
+      propertyPath: availableCharacters.Array.data[1].name
+      value: Melee
+      objectReference: {fileID: 0}
+    - target: {fileID: 2229619227062992971, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
+      propertyPath: availableCharacters.Array.data[1].type
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2229619227062992971, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
+      propertyPath: availableCharacters.Array.data[0].prefab
+      value: 
+      objectReference: {fileID: 5123290507034825827, guid: 7812fd1a05891da4bb88c201083434c5, type: 3}
+    - target: {fileID: 2229619227062992971, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
+      propertyPath: availableCharacters.Array.data[1].prefab
+      value: 
+      objectReference: {fileID: 8592517418037104678, guid: f7d341c7d38415f448c796ba014cd50c, type: 3}
+    - target: {fileID: 2229619227062992971, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
+      propertyPath: availableCharacters.Array.data[0].portrait
+      value: 
+      objectReference: {fileID: -6081420806989755346, guid: 17cc62d7370fc38499d3bb9ad3729541, type: 3}
+    - target: {fileID: 2229619227062992971, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
+      propertyPath: availableCharacters.Array.data[1].portrait
+      value: 
+      objectReference: {fileID: 622985489596670909, guid: fc85dfe1d5422814b9afb2cb48f6e291, type: 3}
+    - target: {fileID: 2229619227062992971, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
+      propertyPath: availableCharacters.Array.data[0].description
+      value: gunner
+      objectReference: {fileID: 0}
+    - target: {fileID: 2229619227062992971, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
+      propertyPath: availableCharacters.Array.data[1].description
+      value: melee
+      objectReference: {fileID: 0}
     - target: {fileID: 2928719393966934508, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
       propertyPath: m_Name
       value: CharacterSelectionManager
@@ -490,6 +554,10 @@ PrefabInstance:
     - target: {fileID: 4517828355449723289, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5150786773801817825, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
+      propertyPath: m_Enabled
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5150786773801817825, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
       propertyPath: readyPrompt
@@ -555,7 +623,8 @@ PrefabInstance:
       propertyPath: player2SelectionUI
       value: 
       objectReference: {fileID: 1861403126}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 2229619227062992971, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -568,6 +637,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 9056146602346543, guid: f3d9c8f69a383da4fa4b7565cadd67f0, type: 3}
+      propertyPath: m_DefaultControlScheme
+      value: Gamepad
+      objectReference: {fileID: 0}
     - target: {fileID: 7380715390736765262, guid: f3d9c8f69a383da4fa4b7565cadd67f0, type: 3}
       propertyPath: m_Name
       value: InputHandeler

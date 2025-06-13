@@ -14,9 +14,19 @@ public class PlayerController : MonoBehaviour
 
     [Header("Shooting")]
     public GameObject bulletPrefab;
-    public GameObject bullet2Prefab;
+    public GameObject grenadePrefab; // Changed from bullet2Prefab
     public Transform firePoint;
     public float fireRate = 0.2f;
+
+    [Header("Grenade Settings")]
+    public float grenadeCooldown = 3f;
+    public float grenadeForce = 12f; // Forward launch force
+
+    [Header("UI Elements")]
+    public UnityEngine.UI.Image grenadeCooldownFill; // Radial fill image
+    public UnityEngine.UI.Text grenadeCooldownText; // Text showing seconds remaining
+    public Color cooldownColor = Color.red;
+    public Color readyColor = Color.green;
 
     [Header("Jump Tuning")]
     public float fallMultiplier = 2.5f;
@@ -26,10 +36,12 @@ public class PlayerController : MonoBehaviour
     private Animator animator;
     private bool isGrounded;
     private float nextFireTime;
+    private float nextGrenadeTime; // Add grenade cooldown timer
 
     private Vector2 moveInput;
     private Vector2 aimInput = Vector2.right;
     private bool jumpPressed;
+    private bool jumpRequested; // Add a separate jump request flag
     private bool fire1Pressed;
     private bool fire2Pressed;
 
@@ -47,7 +59,7 @@ public class PlayerController : MonoBehaviour
         if (playerInput == null)
         {
             // If no PlayerInput on this object, find the one with matching index
-            PlayerInput[] allInputs = FindObjectsOfType<PlayerInput>();
+            PlayerInput[] allInputs = FindObjectsByType<PlayerInput>(FindObjectsSortMode.None);
             foreach (var input in allInputs)
             {
                 if (input.playerIndex == PlayerIndex)
@@ -103,6 +115,16 @@ public class PlayerController : MonoBehaviour
         {
             Debug.LogError($"GunnerController - No PlayerInput found for PlayerIndex: {PlayerIndex}");
         }
+
+        // Debug ground check setup
+        if (groundCheck == null)
+        {
+            Debug.LogError("Ground Check Transform is not assigned!");
+        }
+        else
+        {
+            Debug.Log($"Ground Check assigned. Player pos: {transform.position}, Ground check pos: {groundCheck.position}");
+        }
     }
 
     void OnDestroy()
@@ -153,7 +175,11 @@ public class PlayerController : MonoBehaviour
     private void OnMoveCancel(InputAction.CallbackContext context) => moveInput = Vector2.zero;
     private void OnAim(InputAction.CallbackContext context) => aimInput = context.ReadValue<Vector2>();
     private void OnAimCancel(InputAction.CallbackContext context) => aimInput = Vector2.right;
-    private void OnJump(InputAction.CallbackContext context) => jumpPressed = true;
+    private void OnJump(InputAction.CallbackContext context)
+    {
+        jumpPressed = true;
+        jumpRequested = true; // Set jump request when button is pressed
+    }
     private void OnJumpCancel(InputAction.CallbackContext context) => jumpPressed = false;
     private void OnFire1(InputAction.CallbackContext context) => fire1Pressed = true;
     private void OnFire1Cancel(InputAction.CallbackContext context) => fire1Pressed = false;
@@ -165,6 +191,7 @@ public class PlayerController : MonoBehaviour
         CheckGrounded();
         HandleJumping();
         HandleShooting();
+        UpdateGrenadeCooldownUI();
         UpdateAnimator();
     }
 
@@ -191,14 +218,32 @@ public class PlayerController : MonoBehaviour
     void CheckGrounded()
     {
         isGrounded = Physics2D.OverlapCircle(groundCheck.position, 0.1f, groundLayer);
+
+       
+
+        // Debug ground detection
+        if (jumpRequested)
+        {
+            Debug.Log($"Ground check: isGrounded = {isGrounded}, groundCheck pos: {groundCheck.position}");
+            Debug.Log($"Checking layer mask: {groundLayer.value}, overlapping objects: {Physics2D.OverlapCircle(groundCheck.position, 0.1f, groundLayer)}");
+        }
     }
 
     void HandleJumping()
     {
-        if (jumpPressed && isGrounded)
+        // Use jumpRequested for more reliable jump detection
+        if (jumpRequested && isGrounded)
         {
+            Debug.Log($"Jump executed! Current velocity: {rb.linearVelocity}, jumpForce: {jumpForce}");
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
-            jumpPressed = false;
+            Debug.Log($"After jump velocity: {rb.linearVelocity}");
+            jumpRequested = false; // Clear the jump request after using it
+        }
+
+        // Clear jump request if we've been in air too long (prevents stuck jump requests)
+        if (!isGrounded && jumpRequested)
+        {
+            jumpRequested = false;
         }
     }
 
@@ -216,23 +261,116 @@ public class PlayerController : MonoBehaviour
 
     void HandleShooting()
     {
-        if (Time.time >= nextFireTime)
+        // Handle regular bullet shooting
+        if (Time.time >= nextFireTime && fire1Pressed)
         {
-            if (fire1Pressed)
+            nextFireTime = Time.time + fireRate;
+            GameObject bullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.identity);
+            bullet.GetComponent<Bullet>().SetDirection(GetAimDirection());
+            fire1Pressed = false;
+        }
+
+        // Handle grenade throwing
+        if (Time.time >= nextGrenadeTime && fire2Pressed)
+        {
+            ThrowGrenade();
+            nextGrenadeTime = Time.time + grenadeCooldown;
+            fire2Pressed = false;
+        }
+    }
+
+    void ThrowGrenade()
+    {
+        if (grenadePrefab == null)
+        {
+            Debug.LogWarning("Grenade prefab is not assigned!");
+            return;
+        }
+
+        // Launch grenade straight forward in aim direction
+        Vector2 throwDirection = GetAimDirection();
+
+        // Spawn grenade
+        GameObject grenade = Instantiate(grenadePrefab, firePoint.position, Quaternion.identity);
+
+        if (grenade == null)
+        {
+            Debug.LogError("Failed to instantiate grenade!");
+            return;
+        }
+
+        Grenade grenadeScript = grenade.GetComponent<Grenade>();
+        if (grenadeScript != null)
+        {
+            grenadeScript.Launch(throwDirection, grenadeForce);
+        }
+        else
+        {
+            Debug.LogWarning("Grenade prefab doesn't have Grenade script! Using fallback method.");
+            // Fallback if no Grenade script
+            Rigidbody2D grenadeRb = grenade.GetComponent<Rigidbody2D>();
+            if (grenadeRb != null)
             {
-                nextFireTime = Time.time + fireRate;
-                GameObject bullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.identity);
-                bullet.GetComponent<Bullet>().SetDirection(GetAimDirection());
-                fire1Pressed = false;
+                grenadeRb.linearVelocity = throwDirection * grenadeForce;
             }
-            else if (fire2Pressed)
+            else
             {
-                nextFireTime = Time.time + fireRate;
-                GameObject bullet2 = Instantiate(bullet2Prefab, firePoint.position, Quaternion.identity);
-                bullet2.GetComponent<Bullet>().SetDirection(GetAimDirection());
-                fire2Pressed = false;
+                Debug.LogError("Grenade prefab has no Rigidbody2D component!");
             }
         }
+
+        Debug.Log($"Grenade launched! Next grenade available in {grenadeCooldown} seconds.");
+    }
+
+    void UpdateGrenadeCooldownUI()
+    {
+        float timeRemaining = nextGrenadeTime - Time.time;
+        bool isOnCooldown = timeRemaining > 0f;
+
+        // Update the radial fill image
+        if (grenadeCooldownFill != null)
+        {
+            if (isOnCooldown)
+            {
+                // Show cooldown progress (fill decreases as cooldown reduces)
+                float fillAmount = timeRemaining / grenadeCooldown;
+                grenadeCooldownFill.fillAmount = fillAmount;
+                grenadeCooldownFill.color = cooldownColor;
+            }
+            else
+            {
+                // Grenade is ready
+                grenadeCooldownFill.fillAmount = 1f;
+                grenadeCooldownFill.color = readyColor;
+            }
+        }
+
+        // Update the text
+        if (grenadeCooldownText != null)
+        {
+            if (isOnCooldown)
+            {
+                grenadeCooldownText.text = $"{timeRemaining:F1}s";
+                grenadeCooldownText.color = cooldownColor;
+            }
+            else
+            {
+                grenadeCooldownText.text = "READY";
+                grenadeCooldownText.color = readyColor;
+            }
+        }
+    }
+
+    // Public method to check if grenade is ready (useful for other UI elements)
+    public bool IsGrenadeReady()
+    {
+        return Time.time >= nextGrenadeTime;
+    }
+
+    // Get remaining cooldown time
+    public float GetGrenadeCooldownRemaining()
+    {
+        return Mathf.Max(0f, nextGrenadeTime - Time.time);
     }
 
     Vector2 GetAimDirection()

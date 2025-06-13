@@ -171,7 +171,7 @@ public class GameplayCharacterSpawner : MonoBehaviour
         }
 
         // Find existing PlayerInput components (they persist from character selection)
-        PlayerInput[] existingPlayers = FindObjectsOfType<PlayerInput>();
+        PlayerInput[] existingPlayers = FindObjectsByType<PlayerInput>(FindObjectsSortMode.None);
         DebugLog($"Found {existingPlayers.Length} existing PlayerInput components:");
 
         for (int i = 0; i < existingPlayers.Length; i++)

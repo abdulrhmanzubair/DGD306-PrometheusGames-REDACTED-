@@ -61,7 +61,7 @@ public class Player_Melee_Controller1 : MonoBehaviour
         if (playerInput == null)
         {
             // If no PlayerInput on this object, find the one with matching index
-            PlayerInput[] allInputs = FindObjectsOfType<PlayerInput>();
+            PlayerInput[] allInputs = FindObjectsByType<PlayerInput>(FindObjectsSortMode.None);
             foreach (var input in allInputs)
             {
                 if (input.playerIndex == PlayerIndex)

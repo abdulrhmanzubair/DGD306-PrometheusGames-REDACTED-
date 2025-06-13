@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4517828355449723289}
   - component: {fileID: 5150786773801817825}
+  - component: {fileID: 2229619227062992971}
   m_Layer: 0
   m_Name: CharacterSelectionManager
   m_TagString: Untagged
@@ -39,7 +40,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2928719393966934508}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0938ad43f416e744a813ea0028583659, type: 3}
   m_Name: 
@@ -52,3 +53,25 @@ MonoBehaviour:
   selectedColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   unselectedColor: {r: 1, g: 1, b: 1, a: 1}
   readyColor: {r: 0, g: 1, b: 0, a: 1}
+--- !u!114 &2229619227062992971
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2928719393966934508}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43d314bc0018dfd459de1510e9d102d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  availableCharacters: []
+  player1SelectionUI: {fileID: 0}
+  player2SelectionUI: {fileID: 0}
+  readyPrompt: {fileID: 0}
+  gameplaySceneName: LVL_001
+  selectedColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  unselectedColor: {r: 1, g: 1, b: 1, a: 1}
+  readyColor: {r: 0, g: 1, b: 0, a: 1}
+  playerInputActions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
+  enableDebugLogging: 1

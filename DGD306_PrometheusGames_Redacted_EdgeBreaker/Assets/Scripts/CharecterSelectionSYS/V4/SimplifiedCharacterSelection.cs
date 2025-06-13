@@ -52,7 +52,16 @@ public class SimplifiedCharacterSelection : MonoBehaviour
         // Ensure time scale is normal
         Time.timeScale = 1f;
 
-        Debug.Log("[CharSelection] Simple character selection started. Press SPACE (P1) or ENTER (P2) to join!");
+        Debug.Log("[CharSelection] Simple character selection started.");
+        Debug.Log("GAMEPAD SETUP:");
+        Debug.Log($"  Total gamepads connected: {Gamepad.all.Count}");
+        for (int i = 0; i < Gamepad.all.Count; i++)
+        {
+            Debug.Log($"  Gamepad {i}: {Gamepad.all[i].name}");
+        }
+        Debug.Log("CONTROLS:");
+        Debug.Log("  Player 1: SPACE (keyboard) or A button (Gamepad 1)");
+        Debug.Log("  Player 2: ENTER (keyboard) or A button (Gamepad 2)");
     }
 
     private void SetupPlayerState(PlayerState state, Transform uiRoot, int playerIndex)
@@ -112,15 +121,19 @@ public class SimplifiedCharacterSelection : MonoBehaviour
     {
         if (!player1State.isJoined)
         {
-            // Player 1 joins with SPACE
+            // Player 1 joins with SPACE or FIRST GAMEPAD (index 0)
             if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
+            {
+                JoinPlayer(player1State, 0);
+            }
+            else if (Gamepad.all.Count > 0 && Gamepad.all[0].buttonSouth.wasPressedThisFrame)
             {
                 JoinPlayer(player1State, 0);
             }
         }
         else if (!player1State.isReady)
         {
-            // Navigation with A/D
+            // Navigation with A/D or FIRST GAMEPAD (index 0)
             if (Keyboard.current != null)
             {
                 if (Keyboard.current.aKey.wasPressedThisFrame)
@@ -140,11 +153,37 @@ public class SimplifiedCharacterSelection : MonoBehaviour
                     CancelReady(player1State, 0);
                 }
             }
+
+            // Check FIRST gamepad (index 0) for Player 1
+            if (Gamepad.all.Count > 0)
+            {
+                var gamepad1 = Gamepad.all[0];
+                if (gamepad1.dpad.left.wasPressedThisFrame || gamepad1.leftStick.left.wasPressedThisFrame)
+                {
+                    ChangeCharacter(player1State, 0, -1);
+                }
+                else if (gamepad1.dpad.right.wasPressedThisFrame || gamepad1.leftStick.right.wasPressedThisFrame)
+                {
+                    ChangeCharacter(player1State, 0, 1);
+                }
+                else if (gamepad1.buttonSouth.wasPressedThisFrame)
+                {
+                    ConfirmSelection(player1State, 0);
+                }
+                else if (gamepad1.buttonEast.wasPressedThisFrame)
+                {
+                    CancelReady(player1State, 0);
+                }
+            }
         }
         else
         {
-            // Cancel ready with ESC
+            // Cancel ready with ESC or gamepad B
             if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                CancelReady(player1State, 0);
+            }
+            else if (Gamepad.all.Count > 0 && Gamepad.all[0].buttonEast.wasPressedThisFrame)
             {
                 CancelReady(player1State, 0);
             }
@@ -155,13 +194,14 @@ public class SimplifiedCharacterSelection : MonoBehaviour
     {
         if (!player2State.isJoined)
         {
-            // Player 2 joins with ENTER or Gamepad
+            // Player 2 joins with ENTER or SECOND GAMEPAD (index 1)
             bool shouldJoin = false;
 
             if (Keyboard.current != null && Keyboard.current.enterKey.wasPressedThisFrame)
                 shouldJoin = true;
 
-            if (Gamepad.current != null && Gamepad.current.buttonSouth.wasPressedThisFrame)
+            // Check for second gamepad specifically (index 1)
+            if (Gamepad.all.Count > 1 && Gamepad.all[1].buttonSouth.wasPressedThisFrame)
                 shouldJoin = true;
 
             if (shouldJoin)
@@ -171,7 +211,7 @@ public class SimplifiedCharacterSelection : MonoBehaviour
         }
         else if (!player2State.isReady)
         {
-            // Navigation with Arrow keys or Gamepad
+            // Navigation with Arrow keys or SECOND GAMEPAD (index 1)
             bool leftPressed = false;
             bool rightPressed = false;
             bool confirmPressed = false;
@@ -185,12 +225,14 @@ public class SimplifiedCharacterSelection : MonoBehaviour
                 cancelPressed = Keyboard.current.escapeKey.wasPressedThisFrame;
             }
 
-            if (Gamepad.current != null)
+            // Use SECOND gamepad (index 1) for Player 2
+            if (Gamepad.all.Count > 1)
             {
-                leftPressed |= Gamepad.current.dpad.left.wasPressedThisFrame || Gamepad.current.leftStick.left.wasPressedThisFrame;
-                rightPressed |= Gamepad.current.dpad.right.wasPressedThisFrame || Gamepad.current.leftStick.right.wasPressedThisFrame;
-                confirmPressed |= Gamepad.current.buttonSouth.wasPressedThisFrame;
-                cancelPressed |= Gamepad.current.buttonEast.wasPressedThisFrame;
+                var gamepad2 = Gamepad.all[1];
+                leftPressed |= gamepad2.dpad.left.wasPressedThisFrame || gamepad2.leftStick.left.wasPressedThisFrame;
+                rightPressed |= gamepad2.dpad.right.wasPressedThisFrame || gamepad2.leftStick.right.wasPressedThisFrame;
+                confirmPressed |= gamepad2.buttonSouth.wasPressedThisFrame;
+                cancelPressed |= gamepad2.buttonEast.wasPressedThisFrame;
             }
 
             if (leftPressed) ChangeCharacter(player2State, 1, -1);
@@ -206,7 +248,8 @@ public class SimplifiedCharacterSelection : MonoBehaviour
             if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
                 cancelPressed = true;
 
-            if (Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame)
+            // Use SECOND gamepad (index 1) for Player 2
+            if (Gamepad.all.Count > 1 && Gamepad.all[1].buttonEast.wasPressedThisFrame)
                 cancelPressed = true;
 
             if (cancelPressed)
@@ -263,9 +306,15 @@ public class SimplifiedCharacterSelection : MonoBehaviour
         {
             // Show join prompt
             if (state.playerLabel != null)
-                state.playerLabel.text = $"PLAYER {playerIndex + 1} - PRESS {(playerIndex == 0 ? "SPACE" : "ENTER")} TO JOIN";
+            {
+                string joinPrompt = playerIndex == 0 ? "GAMEPAD 1 or SPACE" : "GAMEPAD 2 or ENTER";
+                state.playerLabel.text = $"PLAYER {playerIndex + 1} - PRESS {joinPrompt} TO JOIN";
+            }
             else
-                Debug.Log($"Player {playerIndex + 1} - Press {(playerIndex == 0 ? "SPACE" : "ENTER")} to join!");
+            {
+                string joinPrompt = playerIndex == 0 ? "GAMEPAD 1 or SPACE" : "GAMEPAD 2 or ENTER";
+                Debug.Log($"Player {playerIndex + 1} - Press {joinPrompt} to join!");
+            }
             return;
         }
 
@@ -292,7 +341,7 @@ public class SimplifiedCharacterSelection : MonoBehaviour
 
             if (state.statusText != null)
             {
-                string controls = playerIndex == 0 ? "A/D to select, SPACE to confirm" : "← → to select, ENTER to confirm";
+                string controls = GetControlsText(playerIndex);
                 state.statusText.text = state.isReady ? "READY!" : controls;
             }
 
@@ -313,6 +362,20 @@ public class SimplifiedCharacterSelection : MonoBehaviour
                     state.characterPortraits[i].color = targetColor;
                 }
             }
+        }
+    }
+
+    private string GetControlsText(int playerIndex)
+    {
+        if (playerIndex == 0)
+        {
+            return Gamepad.all.Count > 0 ? "D-Pad/Stick to select, A to confirm, B to cancel"
+                                        : "A/D to select, SPACE to confirm, ESC to cancel";
+        }
+        else
+        {
+            return Gamepad.all.Count > 1 ? "D-Pad/Stick to select, A to confirm, B to cancel"
+                                        : "← → to select, ENTER to confirm, ESC to cancel";
         }
     }
 
