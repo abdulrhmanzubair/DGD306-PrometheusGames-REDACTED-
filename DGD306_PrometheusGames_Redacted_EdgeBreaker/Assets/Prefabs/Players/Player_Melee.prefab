@@ -74,10 +74,8 @@ GameObject:
   - component: {fileID: 4138315315807038641}
   - component: {fileID: 17599955416509841}
   - component: {fileID: 4211302096509789738}
-  - component: {fileID: 3792311500246899031}
   - component: {fileID: 4609533835695921402}
   - component: {fileID: 6604136961680569169}
-  - component: {fileID: 7903499885157646658}
   - component: {fileID: 1061992957700373386}
   - component: {fileID: 2643967937031675534}
   m_Layer: 0
@@ -233,22 +231,6 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
---- !u!114 &3792311500246899031
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8592517418037104678}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9dc7581db02178e4bbbb3aa980e4461e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  moveSpeed: 5
-  jumpForce: 5
-  rb: {fileID: 4211302096509789738}
-  animator: {fileID: 0}
 --- !u!114 &4609533835695921402
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -268,9 +250,15 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   bulletPrefab: {fileID: 3092579064342640799, guid: ebefb93e70dcfcd43a17064c8f3f8e14, type: 3}
-  bullet2Prefab: {fileID: 3092579064342640799, guid: 2b0e6ebb077f5a948bee44ac51c41725, type: 3}
+  grenadePrefab: {fileID: 0}
   firePoint: {fileID: 4179661817814541990}
   fireRate: 0.2
+  grenadeCooldown: 3
+  grenadeForce: 12
+  grenadeCooldownFill: {fileID: 0}
+  grenadeCooldownText: {fileID: 0}
+  cooldownColor: {r: 1, g: 0, b: 0, a: 1}
+  readyColor: {r: 0, g: 1, b: 0, a: 1}
   fallMultiplier: 2.5
   lowJumpMultiplier: 2
 --- !u!114 &6604136961680569169
@@ -378,32 +366,27 @@ MonoBehaviour:
       m_Calls: []
     m_ActionId: ac58f83f-cc78-4f15-860b-6d34ae5c4d5f
     m_ActionName: 'Player/Attack2[/Mouse/rightButton]'
+  - m_PersistentCalls:
+      m_Calls: []
+    m_ActionId: 612794d0-ac85-447c-8b73-bb1c5022eb67
+    m_ActionName: 'Player/Aim[/DualShock4GamepadHID/leftStick,/DualShock4GamepadHID1/leftStick,/Keyboard/w,/Keyboard/upArrow,/Keyboard/s,/Keyboard/downArrow,/Keyboard/a,/Keyboard/leftArrow,/Keyboard/d,/Keyboard/rightArrow,/DualShock4GamepadHID/dpad/up,/DualShock4GamepadHID1/dpad/up,/DualShock4GamepadHID/dpad/down,/DualShock4GamepadHID1/dpad/down,/DualShock4GamepadHID/dpad/left,/DualShock4GamepadHID1/dpad/left,/DualShock4GamepadHID/dpad/right,/DualShock4GamepadHID1/dpad/right]'
+  - m_PersistentCalls:
+      m_Calls: []
+    m_ActionId: b10513b6-2c67-441e-a92e-f47f27ab222d
+    m_ActionName: 'Player/Dash[/Mouse/leftButton,/DualShock4GamepadHID/buttonWest,/DualShock4GamepadHID1/buttonWest,/Keyboard/enter,/DualShock4GamepadHID/rightStickPress,/DualShock4GamepadHID1/rightStickPress]'
+  - m_PersistentCalls:
+      m_Calls: []
+    m_ActionId: 5f5a4533-f7e5-4ca6-8bf4-6652a89c8104
+    m_ActionName: 'Player/Guard[/Mouse/rightButton,/DualShock4GamepadHID/buttonEast,/DualShock4GamepadHID1/buttonEast]'
+  - m_PersistentCalls:
+      m_Calls: []
+    m_ActionId: e8805d07-cbc2-4fb5-b113-d5b8133e4da5
+    m_ActionName: 'UI/Confirm[/DualShock4GamepadHID/select,/DualShock4GamepadHID1/select,/Keyboard/enter]'
   m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: 
   m_DefaultActionMap: Player
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
---- !u!114 &7903499885157646658
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8592517418037104678}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 261e1fe73bc37a843bc6b1bbfe2d14bc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _firePoint: {fileID: 4179661817814541990}
-  _primaryProjectile: {fileID: 3092579064342640799, guid: ebefb93e70dcfcd43a17064c8f3f8e14, type: 3}
-  _fireRate: 0.2
-  _secondaryProjectile: {fileID: 3092579064342640799, guid: 2b0e6ebb077f5a948bee44ac51c41725, type: 3}
-  _secondaryFireCooldown: 1
-  _secondaryAmmo: 5
-  _maxSecondaryAmmo: 10
-  _muzzleFlash: {fileID: 0}
-  _secondaryFireSound: {fileID: 8300000, guid: f17da19450c347a4e95db4530f935606, type: 3}
 --- !u!95 &1061992957700373386
 Animator:
   serializedVersion: 7
@@ -448,13 +431,12 @@ MonoBehaviour:
   guardSpawnPoint: {fileID: 4179661817814541990}
   guardCooldown: 2
   guardLifetime: 3
+  attackPoint: {fileID: 8452139274831645909}
+  dashForce: 50
+  dashCooldown: 1
+  dashDuration: 0.2
   fallMultiplier: 2.5
   lowJumpMultiplier: 2
-  dashForce: 50
-  dashDuration: 0.2
-  dashCooldown: 1
-  slashEffectPrefab: {fileID: 5817206132592912506, guid: 5f6650d852b248e4c8e4bdca035c2a22, type: 3}
-  attackPoint: {fileID: 8452139274831645909}
 --- !u!1 &9114657336432228754
 GameObject:
   m_ObjectHideFlags: 0

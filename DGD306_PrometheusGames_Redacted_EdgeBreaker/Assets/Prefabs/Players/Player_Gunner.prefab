@@ -14,7 +14,6 @@ GameObject:
   - component: {fileID: 4614736715721277231}
   - component: {fileID: 294906211115814280}
   - component: {fileID: 6082070678135718795}
-  - component: {fileID: 291143176228611369}
   - component: {fileID: 8590530733465248326}
   m_Layer: 0
   m_Name: Player_Gunner
@@ -192,6 +191,10 @@ MonoBehaviour:
   fireRate: 0.2
   grenadeCooldown: 10
   grenadeForce: 33
+  grenadeCooldownFill: {fileID: 0}
+  grenadeCooldownText: {fileID: 0}
+  cooldownColor: {r: 1, g: 0, b: 0, a: 1}
+  readyColor: {r: 0, g: 1, b: 0, a: 1}
   fallMultiplier: 4
   lowJumpMultiplier: 2
 --- !u!114 &6082070678135718795
@@ -320,27 +323,6 @@ MonoBehaviour:
   m_DefaultActionMap: Player
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
---- !u!114 &291143176228611369
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5123290507034825827}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 261e1fe73bc37a843bc6b1bbfe2d14bc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _firePoint: {fileID: 1477149396339864791}
-  _primaryProjectile: {fileID: 3092579064342640799, guid: ebefb93e70dcfcd43a17064c8f3f8e14, type: 3}
-  _fireRate: 0.2
-  _secondaryProjectile: {fileID: 3092579064342640799, guid: 2b0e6ebb077f5a948bee44ac51c41725, type: 3}
-  _secondaryFireCooldown: 1
-  _secondaryAmmo: 5
-  _maxSecondaryAmmo: 10
-  _muzzleFlash: {fileID: 0}
-  _secondaryFireSound: {fileID: 8300000, guid: f17da19450c347a4e95db4530f935606, type: 3}
 --- !u!95 &8590530733465248326
 Animator:
   serializedVersion: 7

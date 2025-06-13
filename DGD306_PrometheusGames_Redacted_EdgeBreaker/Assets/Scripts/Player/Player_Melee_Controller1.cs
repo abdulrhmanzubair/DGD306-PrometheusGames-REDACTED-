@@ -39,8 +39,11 @@ public class Player_Melee_Controller1 : MonoBehaviour
     private bool isDashing = false;
     private float dashEndTime;
 
-    // Updated input system - use PlayerInput component
-    private PlayerInput playerInput;
+    // DIRECT INPUT ONLY - no PlayerInput system
+    private PlayerDeviceInfo deviceInfo;
+    private InputDevice assignedDevice;
+
+    // Input states
     private bool jumpPressed;
     private bool dashPressed;
     private bool guardPressed;
@@ -55,132 +58,137 @@ public class Player_Melee_Controller1 : MonoBehaviour
 
     void Start()
     {
-        // Get the PlayerInput component that was set up by the spawner
-        playerInput = GetComponent<PlayerInput>();
-
-        if (playerInput == null)
+        // Get device info from the spawner
+        deviceInfo = GetComponent<PlayerDeviceInfo>();
+        if (deviceInfo != null)
         {
-            // If no PlayerInput on this object, find the one with matching index
-            PlayerInput[] allInputs = FindObjectsByType<PlayerInput>(FindObjectsSortMode.None);
-            foreach (var input in allInputs)
-            {
-                if (input.playerIndex == PlayerIndex)
-                {
-                    playerInput = input;
-                    break;
-                }
-            }
-        }
-
-        if (playerInput != null)
-        {
-            Debug.Log($"MeleeController - PlayerIndex: {PlayerIndex}, PlayerInput found with index: {playerInput.playerIndex}");
-
-            // Set up input callbacks using the PlayerInput's actions
-            var moveAction = playerInput.actions["Move"];
-            var aimAction = playerInput.actions["Aim"];
-            var jumpAction = playerInput.actions["Jump"];
-            var dashAction = playerInput.actions["Dash"];
-            var guardAction = playerInput.actions["Guard"];
-
-            if (moveAction != null)
-            {
-                moveAction.performed += OnMove;
-                moveAction.canceled += OnMoveCancel;
-            }
-
-            if (aimAction != null)
-            {
-                aimAction.performed += OnAim;
-                aimAction.canceled += OnAimCancel;
-            }
-
-            if (jumpAction != null)
-            {
-                jumpAction.performed += OnJump;
-                jumpAction.canceled += OnJumpCancel;
-            }
-
-            if (dashAction != null)
-            {
-                dashAction.performed += OnDash;
-                dashAction.canceled += OnDashCancel;
-            }
-
-            if (guardAction != null)
-            {
-                guardAction.performed += OnGuard;
-                guardAction.canceled += OnGuardCancel;
-            }
+            assignedDevice = deviceInfo.AssignedDevice;
+            PlayerIndex = deviceInfo.PlayerIndex;
+            Debug.Log($"MeleeController - DIRECT INPUT - PlayerIndex: {PlayerIndex}, Device: {assignedDevice?.name ?? "None"}");
         }
         else
         {
-            Debug.LogError($"MeleeController - No PlayerInput found for PlayerIndex: {PlayerIndex}");
+            Debug.LogError($"MeleeController - No PlayerDeviceInfo found!");
         }
     }
-
-    void OnDestroy()
-    {
-        // Clean up input callbacks
-        if (playerInput != null)
-        {
-            var moveAction = playerInput.actions["Move"];
-            var aimAction = playerInput.actions["Aim"];
-            var jumpAction = playerInput.actions["Jump"];
-            var dashAction = playerInput.actions["Dash"];
-            var guardAction = playerInput.actions["Guard"];
-
-            if (moveAction != null)
-            {
-                moveAction.performed -= OnMove;
-                moveAction.canceled -= OnMoveCancel;
-            }
-
-            if (aimAction != null)
-            {
-                aimAction.performed -= OnAim;
-                aimAction.canceled -= OnAimCancel;
-            }
-
-            if (jumpAction != null)
-            {
-                jumpAction.performed -= OnJump;
-                jumpAction.canceled -= OnJumpCancel;
-            }
-
-            if (dashAction != null)
-            {
-                dashAction.performed -= OnDash;
-                dashAction.canceled -= OnDashCancel;
-            }
-
-            if (guardAction != null)
-            {
-                guardAction.performed -= OnGuard;
-                guardAction.canceled -= OnGuardCancel;
-            }
-        }
-    }
-
-    // Input callback methods
-    private void OnMove(InputAction.CallbackContext context) => moveInput = context.ReadValue<Vector2>();
-    private void OnMoveCancel(InputAction.CallbackContext context) => moveInput = Vector2.zero;
-    private void OnAim(InputAction.CallbackContext context) => aimDirection = context.ReadValue<Vector2>();
-    private void OnAimCancel(InputAction.CallbackContext context) => aimDirection = Vector2.right;
-    private void OnJump(InputAction.CallbackContext context) => jumpPressed = true;
-    private void OnJumpCancel(InputAction.CallbackContext context) => jumpPressed = false;
-    private void OnDash(InputAction.CallbackContext context) => dashPressed = true;
-    private void OnDashCancel(InputAction.CallbackContext context) => dashPressed = false;
-    private void OnGuard(InputAction.CallbackContext context) => guardPressed = true;
-    private void OnGuardCancel(InputAction.CallbackContext context) => guardPressed = false;
 
     void Update()
     {
+        // Handle DIRECT device input only
+        HandleDirectDeviceInput();
+
         CheckGrounded();
         HandleJumping();
         HandleGuard();
         HandleDashAttack();
         UpdateAnimator();
+    }
+
+    void HandleDirectDeviceInput()
+    {
+        if (assignedDevice == null) return;
+
+        // Handle gamepad input
+        if (assignedDevice is Gamepad gamepad)
+        {
+            // Movement
+            Vector2 leftStick = gamepad.leftStick.ReadValue();
+            Vector2 dpad = gamepad.dpad.ReadValue();
+            moveInput = leftStick.magnitude > 0.1f ? leftStick : dpad;
+
+            // Aim direction (use right stick or default to move direction)
+            Vector2 rightStick = gamepad.rightStick.ReadValue();
+            if (rightStick.magnitude > 0.1f)
+                aimDirection = rightStick;
+            else if (moveInput.magnitude > 0.1f)
+                aimDirection = moveInput;
+
+            // Jump
+            if (gamepad.buttonSouth.wasPressedThisFrame) // A button
+                jumpPressed = true;
+            if (gamepad.buttonSouth.wasReleasedThisFrame)
+                jumpPressed = false;
+
+            // Dash
+            if (gamepad.buttonWest.wasPressedThisFrame) // X button
+                dashPressed = true;
+            if (gamepad.buttonWest.wasReleasedThisFrame)
+                dashPressed = false;
+
+            // Guard
+            if (gamepad.rightShoulder.wasPressedThisFrame) // RB button
+                guardPressed = true;
+            if (gamepad.rightShoulder.wasReleasedThisFrame)
+                guardPressed = false;
+        }
+        // Handle keyboard input - different keys for each player
+        else if (assignedDevice is Keyboard keyboard)
+        {
+            if (PlayerIndex == 0) // Player 1 keyboard controls
+            {
+                // Movement
+                Vector2 keyboardMove = Vector2.zero;
+                if (keyboard.aKey.isPressed) keyboardMove.x -= 1;
+                if (keyboard.dKey.isPressed) keyboardMove.x += 1;
+                if (keyboard.wKey.isPressed) keyboardMove.y += 1;
+                if (keyboard.sKey.isPressed) keyboardMove.y -= 1;
+                moveInput = keyboardMove;
+
+                // Aim direction follows movement
+                if (moveInput.magnitude > 0.1f)
+                    aimDirection = moveInput;
+
+                // Jump
+                if (keyboard.spaceKey.wasPressedThisFrame)
+                    jumpPressed = true;
+                if (keyboard.spaceKey.wasReleasedThisFrame)
+                    jumpPressed = false;
+
+                // Dash
+                if (keyboard.leftShiftKey.wasPressedThisFrame)
+                    dashPressed = true;
+                if (keyboard.leftShiftKey.wasReleasedThisFrame)
+                    dashPressed = false;
+
+                // Guard
+                if (keyboard.leftCtrlKey.wasPressedThisFrame)
+                    guardPressed = true;
+                if (keyboard.leftCtrlKey.wasReleasedThisFrame)
+                    guardPressed = false;
+            }
+            else // Player 2 keyboard controls (different keys)
+            {
+                // Movement
+                Vector2 keyboardMove = Vector2.zero;
+                if (keyboard.leftArrowKey.isPressed) keyboardMove.x -= 1;
+                if (keyboard.rightArrowKey.isPressed) keyboardMove.x += 1;
+                if (keyboard.upArrowKey.isPressed) keyboardMove.y += 1;
+                if (keyboard.downArrowKey.isPressed) keyboardMove.y -= 1;
+                moveInput = keyboardMove;
+
+                // Aim direction follows movement
+                if (moveInput.magnitude > 0.1f)
+                    aimDirection = moveInput;
+
+                // Jump
+                if (keyboard.enterKey.wasPressedThisFrame)
+                    jumpPressed = true;
+                if (keyboard.enterKey.wasReleasedThisFrame)
+                    jumpPressed = false;
+
+                // Dash
+                if (keyboard.rightShiftKey.wasPressedThisFrame)
+                    dashPressed = true;
+                if (keyboard.rightShiftKey.wasReleasedThisFrame)
+                    dashPressed = false;
+
+                // Guard
+                if (keyboard.rightCtrlKey.wasPressedThisFrame)
+                    guardPressed = true;
+                if (keyboard.rightCtrlKey.wasReleasedThisFrame)
+                    guardPressed = false;
+            }
+        }
     }
 
     void FixedUpdate()
@@ -194,7 +202,7 @@ public class Player_Melee_Controller1 : MonoBehaviour
     public void Initialize(int playerIndex)
     {
         PlayerIndex = playerIndex;
-        Debug.Log($"MeleeController initialized with PlayerIndex: {playerIndex}");
+        Debug.Log($"MeleeController initialized with PlayerIndex: {playerIndex} - DIRECT INPUT MODE");
     }
 
     void Move()
@@ -237,8 +245,11 @@ public class Player_Melee_Controller1 : MonoBehaviour
         {
             GameObject guard = Instantiate(guardPrefab, guardSpawnPoint.position, Quaternion.identity);
             GuardBehavior behavior = guard.GetComponent<GuardBehavior>();
-            behavior.SetOwner(this);
-            behavior.SetLifetime(guardLifetime);
+            if (behavior != null)
+            {
+                behavior.SetOwner(this);
+                behavior.SetLifetime(guardLifetime);
+            }
             activeGuard = guard;
             guardPressed = false;
         }
@@ -267,7 +278,7 @@ public class Player_Melee_Controller1 : MonoBehaviour
     {
         if (dashPressed && Time.time >= lastDashTime + dashCooldown)
         {
-            Vector2 dashDir = aimDirection != Vector2.zero ? aimDirection : Vector2.right;
+            Vector2 dashDir = aimDirection.magnitude > 0.1f ? aimDirection : Vector2.right;
             StartDash(dashDir);
             dashPressed = false;
         }

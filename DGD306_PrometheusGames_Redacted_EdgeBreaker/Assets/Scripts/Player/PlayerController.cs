@@ -4,7 +4,10 @@ using UnityEngine.InputSystem;
 public class PlayerController : MonoBehaviour
 {
     public int PlayerIndex { get; set; }
-    private PlayerInput playerInput;
+
+    // DIRECT INPUT ONLY - no PlayerInput system
+    private PlayerDeviceInfo deviceInfo;
+    private InputDevice assignedDevice;
 
     [Header("Movement")]
     public float moveSpeed = 5f;
@@ -14,17 +17,17 @@ public class PlayerController : MonoBehaviour
 
     [Header("Shooting")]
     public GameObject bulletPrefab;
-    public GameObject grenadePrefab; // Changed from bullet2Prefab
+    public GameObject grenadePrefab;
     public Transform firePoint;
     public float fireRate = 0.2f;
 
     [Header("Grenade Settings")]
     public float grenadeCooldown = 3f;
-    public float grenadeForce = 12f; // Forward launch force
+    public float grenadeForce = 12f;
 
     [Header("UI Elements")]
-    public UnityEngine.UI.Image grenadeCooldownFill; // Radial fill image
-    public UnityEngine.UI.Text grenadeCooldownText; // Text showing seconds remaining
+    public UnityEngine.UI.Image grenadeCooldownFill;
+    public UnityEngine.UI.Text grenadeCooldownText;
     public Color cooldownColor = Color.red;
     public Color readyColor = Color.green;
 
@@ -36,12 +39,13 @@ public class PlayerController : MonoBehaviour
     private Animator animator;
     private bool isGrounded;
     private float nextFireTime;
-    private float nextGrenadeTime; // Add grenade cooldown timer
+    private float nextGrenadeTime;
 
+    // Input states
     private Vector2 moveInput;
     private Vector2 aimInput = Vector2.right;
     private bool jumpPressed;
-    private bool jumpRequested; // Add a separate jump request flag
+    private bool jumpRequested;
     private bool fire1Pressed;
     private bool fire2Pressed;
 
@@ -53,67 +57,17 @@ public class PlayerController : MonoBehaviour
 
     void Start()
     {
-        // Get the PlayerInput component that was set up by the spawner
-        playerInput = GetComponent<PlayerInput>();
-
-        if (playerInput == null)
+        // Get device info from the spawner
+        deviceInfo = GetComponent<PlayerDeviceInfo>();
+        if (deviceInfo != null)
         {
-            // If no PlayerInput on this object, find the one with matching index
-            PlayerInput[] allInputs = FindObjectsByType<PlayerInput>(FindObjectsSortMode.None);
-            foreach (var input in allInputs)
-            {
-                if (input.playerIndex == PlayerIndex)
-                {
-                    playerInput = input;
-                    break;
-                }
-            }
-        }
-
-        if (playerInput != null)
-        {
-            Debug.Log($"GunnerController - PlayerIndex: {PlayerIndex}, PlayerInput found with index: {playerInput.playerIndex}");
-
-            // Set up input callbacks using the PlayerInput's actions
-            var moveAction = playerInput.actions["Move"];
-            var aimAction = playerInput.actions["Aim"];
-            var jumpAction = playerInput.actions["Jump"];
-            var fire1Action = playerInput.actions["Fire1"];
-            var fire2Action = playerInput.actions["Fire2"];
-
-            if (moveAction != null)
-            {
-                moveAction.performed += OnMove;
-                moveAction.canceled += OnMoveCancel;
-            }
-
-            if (aimAction != null)
-            {
-                aimAction.performed += OnAim;
-                aimAction.canceled += OnAimCancel;
-            }
-
-            if (jumpAction != null)
-            {
-                jumpAction.performed += OnJump;
-                jumpAction.canceled += OnJumpCancel;
-            }
-
-            if (fire1Action != null)
-            {
-                fire1Action.performed += OnFire1;
-                fire1Action.canceled += OnFire1Cancel;
-            }
-
-            if (fire2Action != null)
-            {
-                fire2Action.performed += OnFire2;
-                fire2Action.canceled += OnFire2Cancel;
-            }
+            assignedDevice = deviceInfo.AssignedDevice;
+            PlayerIndex = deviceInfo.PlayerIndex;
+            Debug.Log($"GunnerController - DIRECT INPUT - PlayerIndex: {PlayerIndex}, Device: {assignedDevice?.name ?? "None"}");
         }
         else
         {
-            Debug.LogError($"GunnerController - No PlayerInput found for PlayerIndex: {PlayerIndex}");
+            Debug.LogError($"GunnerController - No PlayerDeviceInfo found!");
         }
 
         // Debug ground check setup
@@ -127,67 +81,11 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    void OnDestroy()
-    {
-        // Clean up input callbacks
-        if (playerInput != null)
-        {
-            var moveAction = playerInput.actions["Move"];
-            var aimAction = playerInput.actions["Aim"];
-            var jumpAction = playerInput.actions["Jump"];
-            var fire1Action = playerInput.actions["Fire1"];
-            var fire2Action = playerInput.actions["Fire2"];
-
-            if (moveAction != null)
-            {
-                moveAction.performed -= OnMove;
-                moveAction.canceled -= OnMoveCancel;
-            }
-
-            if (aimAction != null)
-            {
-                aimAction.performed -= OnAim;
-                aimAction.canceled -= OnAimCancel;
-            }
-
-            if (jumpAction != null)
-            {
-                jumpAction.performed -= OnJump;
-                jumpAction.canceled -= OnJumpCancel;
-            }
-
-            if (fire1Action != null)
-            {
-                fire1Action.performed -= OnFire1;
-                fire1Action.canceled -= OnFire1Cancel;
-            }
-
-            if (fire2Action != null)
-            {
-                fire2Action.performed -= OnFire2;
-                fire2Action.canceled -= OnFire2Cancel;
-            }
-        }
-    }
-
-    // Input callback methods
-    private void OnMove(InputAction.CallbackContext context) => moveInput = context.ReadValue<Vector2>();
-    private void OnMoveCancel(InputAction.CallbackContext context) => moveInput = Vector2.zero;
-    private void OnAim(InputAction.CallbackContext context) => aimInput = context.ReadValue<Vector2>();
-    private void OnAimCancel(InputAction.CallbackContext context) => aimInput = Vector2.right;
-    private void OnJump(InputAction.CallbackContext context)
-    {
-        jumpPressed = true;
-        jumpRequested = true; // Set jump request when button is pressed
-    }
-    private void OnJumpCancel(InputAction.CallbackContext context) => jumpPressed = false;
-    private void OnFire1(InputAction.CallbackContext context) => fire1Pressed = true;
-    private void OnFire1Cancel(InputAction.CallbackContext context) => fire1Pressed = false;
-    private void OnFire2(InputAction.CallbackContext context) => fire2Pressed = true;
-    private void OnFire2Cancel(InputAction.CallbackContext context) => fire2Pressed = false;
-
     void Update()
     {
+        // Handle DIRECT device input only
+        HandleDirectDeviceInput();
+
         CheckGrounded();
         HandleJumping();
         HandleShooting();
@@ -195,10 +93,126 @@ public class PlayerController : MonoBehaviour
         UpdateAnimator();
     }
 
+    void HandleDirectDeviceInput()
+    {
+        if (assignedDevice == null) return;
+
+        // Handle gamepad input
+        if (assignedDevice is Gamepad gamepad)
+        {
+            // Movement
+            Vector2 leftStick = gamepad.leftStick.ReadValue();
+            Vector2 dpad = gamepad.dpad.ReadValue();
+            moveInput = leftStick.magnitude > 0.1f ? leftStick : dpad;
+
+            // Aim direction (use right stick or default to move direction)
+            Vector2 rightStick = gamepad.rightStick.ReadValue();
+            if (rightStick.magnitude > 0.1f)
+                aimInput = rightStick;
+            else if (moveInput.magnitude > 0.1f)
+                aimInput = moveInput;
+
+            // Jump
+            if (gamepad.buttonSouth.wasPressedThisFrame) // A button
+            {
+                jumpPressed = true;
+                jumpRequested = true;
+            }
+            if (gamepad.buttonSouth.wasReleasedThisFrame)
+                jumpPressed = false;
+
+            // Fire1 (bullets)
+            if (gamepad.rightTrigger.wasPressedThisFrame) // Right Trigger
+                fire1Pressed = true;
+            if (gamepad.rightTrigger.wasReleasedThisFrame)
+                fire1Pressed = false;
+
+            // Fire2 (grenades)
+            if (gamepad.rightShoulder.wasPressedThisFrame) // Right Bumper
+                fire2Pressed = true;
+            if (gamepad.rightShoulder.wasReleasedThisFrame)
+                fire2Pressed = false;
+        }
+        // Handle keyboard input - different keys for each player
+        else if (assignedDevice is Keyboard keyboard)
+        {
+            if (PlayerIndex == 0) // Player 1 keyboard controls
+            {
+                // Movement
+                Vector2 keyboardMove = Vector2.zero;
+                if (keyboard.aKey.isPressed) keyboardMove.x -= 1;
+                if (keyboard.dKey.isPressed) keyboardMove.x += 1;
+                if (keyboard.wKey.isPressed) keyboardMove.y += 1;
+                if (keyboard.sKey.isPressed) keyboardMove.y -= 1;
+                moveInput = keyboardMove;
+
+                // Aim direction follows movement
+                if (moveInput.magnitude > 0.1f)
+                    aimInput = moveInput;
+
+                // Jump
+                if (keyboard.spaceKey.wasPressedThisFrame)
+                {
+                    jumpPressed = true;
+                    jumpRequested = true;
+                }
+                if (keyboard.spaceKey.wasReleasedThisFrame)
+                    jumpPressed = false;
+
+                // Fire1 (bullets)
+                if (keyboard.leftCtrlKey.wasPressedThisFrame)
+                    fire1Pressed = true;
+                if (keyboard.leftCtrlKey.wasReleasedThisFrame)
+                    fire1Pressed = false;
+
+                // Fire2 (grenades)
+                if (keyboard.leftShiftKey.wasPressedThisFrame)
+                    fire2Pressed = true;
+                if (keyboard.leftShiftKey.wasReleasedThisFrame)
+                    fire2Pressed = false;
+            }
+            else // Player 2 keyboard controls (different keys)
+            {
+                // Movement
+                Vector2 keyboardMove = Vector2.zero;
+                if (keyboard.leftArrowKey.isPressed) keyboardMove.x -= 1;
+                if (keyboard.rightArrowKey.isPressed) keyboardMove.x += 1;
+                if (keyboard.upArrowKey.isPressed) keyboardMove.y += 1;
+                if (keyboard.downArrowKey.isPressed) keyboardMove.y -= 1;
+                moveInput = keyboardMove;
+
+                // Aim direction follows movement
+                if (moveInput.magnitude > 0.1f)
+                    aimInput = moveInput;
+
+                // Jump
+                if (keyboard.enterKey.wasPressedThisFrame)
+                {
+                    jumpPressed = true;
+                    jumpRequested = true;
+                }
+                if (keyboard.enterKey.wasReleasedThisFrame)
+                    jumpPressed = false;
+
+                // Fire1 (bullets)
+                if (keyboard.rightCtrlKey.wasPressedThisFrame)
+                    fire1Pressed = true;
+                if (keyboard.rightCtrlKey.wasReleasedThisFrame)
+                    fire1Pressed = false;
+
+                // Fire2 (grenades)
+                if (keyboard.rightShiftKey.wasPressedThisFrame)
+                    fire2Pressed = true;
+                if (keyboard.rightShiftKey.wasReleasedThisFrame)
+                    fire2Pressed = false;
+            }
+        }
+    }
+
     public void Initialize(int playerIndex)
     {
         PlayerIndex = playerIndex;
-        Debug.Log($"GunnerController initialized with PlayerIndex: {playerIndex}");
+        Debug.Log($"GunnerController initialized with PlayerIndex: {playerIndex} - DIRECT INPUT MODE");
     }
 
     void FixedUpdate()
@@ -218,8 +232,6 @@ public class PlayerController : MonoBehaviour
     void CheckGrounded()
     {
         isGrounded = Physics2D.OverlapCircle(groundCheck.position, 0.1f, groundLayer);
-
-       
 
         // Debug ground detection
         if (jumpRequested)

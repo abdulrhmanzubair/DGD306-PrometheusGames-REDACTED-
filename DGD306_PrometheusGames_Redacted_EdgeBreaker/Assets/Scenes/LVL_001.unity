@@ -2355,6 +2355,7 @@ MonoBehaviour:
   playerSpawnPoints:
   - {fileID: 946160163}
   - {fileID: 1450030861}
+  playerInputActions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   enableDebugLogging: 1
 --- !u!4 &727061557
 Transform:
