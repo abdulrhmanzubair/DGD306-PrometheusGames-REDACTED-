@@ -1,9 +1,9 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Enhanced ScoreManager that persists across all levels
-/// Replaces your existing ScoreManager.cs
+/// Enhanced ScoreManager with robust persistence and game completion detection
 /// </summary>
 public class ScoreManager : MonoBehaviour
 {
@@ -14,45 +14,50 @@ public class ScoreManager : MonoBehaviour
     public int highScore = 0;
 
     [Header("UI References")]
-    public Text scoreText; // Optional, for displaying in UI
-    public Text highScoreText; // Optional, for displaying high score
+    public Text scoreText;
+    public Text highScoreText;
 
     [Header("Score Persistence")]
-    [Tooltip("Save score to PlayerPrefs")]
     public bool saveHighScore = true;
-    [Tooltip("PlayerPrefs key for high score")]
     public string highScoreKey = "HighScore";
+    public string finalScoreKey = "FinalScore"; // For final screen
 
     [Header("Level Tracking")]
     public int currentLevel = 1;
-    public int totalLevels = 5; // Set this to your total number of levels
+    public int totalLevels = 5;
 
-    [Header("Score Events")]
-    public bool enableScoreEvents = true;
+    [Header("Game State")]
+    public bool gameCompleted = false;
+    public string finalScoreScene = "FinalScore";
 
-    // Events for score changes
-    public System.Action<int> OnScoreChanged;
-    public System.Action<int> OnHighScoreBeaten;
-    public System.Action<int, int> OnLevelComplete; // currentScore, levelNumber
-    public System.Action<int> OnGameComplete; // finalScore
-
-    // Level score tracking
+    // Enhanced tracking
     private int scoreAtLevelStart = 0;
     private int currentLevelScore = 0;
+    private float gameStartTime;
+    private int totalDataCollected = 0;
+    private int totalEnemiesDefeated = 0;
+
+    // Events
+    public System.Action<int> OnScoreChanged;
+    public System.Action<int> OnHighScoreBeaten;
+    public System.Action<int, int> OnLevelComplete;
+    public System.Action<int> OnGameComplete;
 
     void Awake()
     {
-        // Singleton pattern with persistence
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject); // This keeps the score across scenes!
+            DontDestroyOnLoad(gameObject);
+
+            gameStartTime = Time.time;
             LoadHighScore();
-            Debug.Log("[ScoreManager] Persistent ScoreManager initialized");
+
+            Debug.Log($"[ScoreManager] Initialized - DontDestroyOnLoad applied");
         }
         else
         {
-            Debug.Log("[ScoreManager] Duplicate ScoreManager destroyed");
+            Debug.Log($"[ScoreManager] Duplicate destroyed - Instance preserved");
             Destroy(gameObject);
         }
     }
@@ -65,13 +70,28 @@ public class ScoreManager : MonoBehaviour
 
     void DetectCurrentLevel()
     {
-        // Auto-detect current level from scene name
-        string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        string sceneName = SceneManager.GetActiveScene().name;
 
-        // Try to extract level number from scene name (e.g., "LVL_001" -> 1)
+        // Don't change level number if we're in final score scene
+        if (sceneName == finalScoreScene || sceneName.Contains("Final") || sceneName.Contains("Complete"))
+        {
+            Debug.Log($"[ScoreManager] In final scene: {sceneName}");
+            return;
+        }
+
+        // Extract level number from scene name
         if (sceneName.Contains("LVL_"))
         {
             string levelPart = sceneName.Replace("LVL_", "").Replace("Level_", "").Replace("Level", "");
+            if (int.TryParse(levelPart, out int levelNum))
+            {
+                SetCurrentLevel(levelNum);
+            }
+        }
+        else if (sceneName.Contains("Level"))
+        {
+            // Handle "Level1", "Level2" format
+            string levelPart = sceneName.Replace("Level", "");
             if (int.TryParse(levelPart, out int levelNum))
             {
                 SetCurrentLevel(levelNum);
@@ -85,69 +105,47 @@ public class ScoreManager : MonoBehaviour
         scoreAtLevelStart = score;
         currentLevelScore = 0;
 
-        Debug.Log($"[ScoreManager] Starting Level {currentLevel} with score: {score}");
+        Debug.Log($"[ScoreManager] Level {currentLevel}/{totalLevels} - Starting Score: {score}");
     }
 
-    public void AddScore(int amount)
+    public void AddScore(int amount, string source = "")
     {
         int oldScore = score;
         score += amount;
         currentLevelScore += amount;
+
+        // Track what gave us points
+        if (source == "data") totalDataCollected++;
+        if (source == "enemy") totalEnemiesDefeated++;
 
         // Check for high score
         if (score > highScore)
         {
             int oldHighScore = highScore;
             highScore = score;
+            SaveHighScore();
 
-            if (saveHighScore)
-            {
-                SaveHighScore();
-            }
-
-            if (enableScoreEvents && oldHighScore > 0) // Don't trigger on first time
+            if (oldHighScore > 0)
             {
                 OnHighScoreBeaten?.Invoke(highScore);
             }
 
-            Debug.Log($"[ScoreManager] NEW HIGH SCORE: {highScore}!");
+            Debug.Log($"[ScoreManager] 🏆 NEW HIGH SCORE: {highScore}!");
         }
 
         UpdateScoreDisplay();
+        OnScoreChanged?.Invoke(score);
 
-        if (enableScoreEvents)
-        {
-            OnScoreChanged?.Invoke(score);
-        }
-
-        Debug.Log($"[ScoreManager] Score: {oldScore} + {amount} = {score} (Level Score: {currentLevelScore})");
-    }
-
-    public void SubtractScore(int amount)
-    {
-        score = Mathf.Max(0, score - amount); // Don't go below 0
-        currentLevelScore = Mathf.Max(0, currentLevelScore - amount);
-
-        UpdateScoreDisplay();
-
-        if (enableScoreEvents)
-        {
-            OnScoreChanged?.Invoke(score);
-        }
-
-        Debug.Log($"[ScoreManager] Score reduced by {amount}. New score: {score}");
+        Debug.Log($"[ScoreManager] +{amount} points {source} | Score: {score} | Level: {currentLevelScore}");
     }
 
     public void OnLevelCompleted()
     {
-        Debug.Log($"[ScoreManager] Level {currentLevel} completed! Level Score: {currentLevelScore}, Total Score: {score}");
+        Debug.Log($"[ScoreManager] ✅ Level {currentLevel} Complete! Level Score: {currentLevelScore}");
 
-        if (enableScoreEvents)
-        {
-            OnLevelComplete?.Invoke(score, currentLevel);
-        }
+        OnLevelComplete?.Invoke(score, currentLevel);
 
-        // Check if this was the final level
+        // Check if this completes the game
         if (currentLevel >= totalLevels)
         {
             OnGameCompleted();
@@ -156,35 +154,65 @@ public class ScoreManager : MonoBehaviour
 
     public void OnGameCompleted()
     {
-        Debug.Log($"[ScoreManager] GAME COMPLETED! Final Score: {score}");
+        gameCompleted = true;
 
-        if (enableScoreEvents)
-        {
-            OnGameComplete?.Invoke(score);
-        }
+        Debug.Log($"[ScoreManager] 🎉 GAME COMPLETED! Final Score: {score}");
 
-        // Save final score as high score if it's better
-        if (score > highScore)
+        // Save final score for the final screen
+        PlayerPrefs.SetInt(finalScoreKey, score);
+        PlayerPrefs.SetFloat("GameCompletionTime", Time.time - gameStartTime);
+        PlayerPrefs.SetInt("TotalDataCollected", totalDataCollected);
+        PlayerPrefs.SetInt("TotalEnemiesDefeated", totalEnemiesDefeated);
+        PlayerPrefs.Save();
+
+        OnGameComplete?.Invoke(score);
+
+        // Transition to final score scene
+        if (LevelTransitionManager.Instance != null)
         {
-            highScore = score;
-            if (saveHighScore)
-            {
-                SaveHighScore();
-            }
+            LevelTransitionManager.Instance.TransitionToScene(finalScoreScene);
         }
+        else
+        {
+            Debug.LogWarning("[ScoreManager] No LevelTransitionManager found! Loading final scene directly.");
+            SceneManager.LoadScene(finalScoreScene);
+        }
+    }
+
+    // Public getters with enhanced data
+    public int GetScore() => score;
+    public int GetHighScore() => highScore;
+    public int GetCurrentLevelScore() => currentLevelScore;
+    public int GetCurrentLevel() => currentLevel;
+    public bool IsGameComplete() => gameCompleted || currentLevel >= totalLevels;
+    public float GetGameProgress() => (float)currentLevel / totalLevels;
+    public float GetPlayTime() => Time.time - gameStartTime;
+    public int GetTotalDataCollected() => totalDataCollected;
+    public int GetTotalEnemiesDefeated() => totalEnemiesDefeated;
+
+    // Game state management
+    public void ResetGame()
+    {
+        score = 0;
+        currentLevel = 1;
+        currentLevelScore = 0;
+        scoreAtLevelStart = 0;
+        gameCompleted = false;
+        gameStartTime = Time.time;
+        totalDataCollected = 0;
+        totalEnemiesDefeated = 0;
+
+        UpdateScoreDisplay();
+        Debug.Log("[ScoreManager] 🔄 Game Reset");
     }
 
     void UpdateScoreDisplay()
     {
         if (scoreText != null)
-        {
-            scoreText.text = "Score: " + score.ToString("N0"); // Formatted with commas
-        }
+            scoreText.text = $"Score: {score:N0}";
 
         if (highScoreText != null)
-        {
-            highScoreText.text = "High Score: " + highScore.ToString("N0");
-        }
+            highScoreText.text = $"Best: {highScore:N0}";
     }
 
     void LoadHighScore()
@@ -202,99 +230,35 @@ public class ScoreManager : MonoBehaviour
         {
             PlayerPrefs.SetInt(highScoreKey, highScore);
             PlayerPrefs.Save();
-            Debug.Log($"[ScoreManager] Saved high score: {highScore}");
         }
     }
 
-    // Public utility methods
-    public int GetScore()
-    {
-        return score;
-    }
-
-    public int GetHighScore()
-    {
-        return highScore;
-    }
-
-    public int GetCurrentLevelScore()
-    {
-        return currentLevelScore;
-    }
-
-    public int GetCurrentLevel()
-    {
-        return currentLevel;
-    }
-
-    public bool IsGameComplete()
-    {
-        return currentLevel >= totalLevels;
-    }
-
-    public float GetGameProgress()
-    {
-        return (float)currentLevel / totalLevels;
-    }
-
-    public void ResetScore()
-    {
-        score = 0;
-        currentLevelScore = 0;
-        scoreAtLevelStart = 0;
-        UpdateScoreDisplay();
-
-        if (enableScoreEvents)
-        {
-            OnScoreChanged?.Invoke(score);
-        }
-
-        Debug.Log("[ScoreManager] Score reset to 0");
-    }
-
-    public void ResetGame()
-    {
-        score = 0;
-        currentLevel = 1;
-        currentLevelScore = 0;
-        scoreAtLevelStart = 0;
-        UpdateScoreDisplay();
-
-        Debug.Log("[ScoreManager] Game reset - Score: 0, Level: 1");
-    }
-
-    // Method to manually set total levels if needed
-    public void SetTotalLevels(int total)
-    {
-        totalLevels = total;
-        Debug.Log($"[ScoreManager] Total levels set to: {totalLevels}");
-    }
-
+    // Auto-save important events
     void OnApplicationPause(bool pauseStatus)
     {
-        if (pauseStatus && saveHighScore)
-        {
-            SaveHighScore(); // Save when app is paused
-        }
+        if (pauseStatus) SaveHighScore();
     }
 
     void OnApplicationFocus(bool hasFocus)
     {
-        if (!hasFocus && saveHighScore)
-        {
-            SaveHighScore(); // Save when app loses focus
-        }
+        if (!hasFocus) SaveHighScore();
     }
 
     void OnDestroy()
     {
         if (Instance == this)
         {
-            if (saveHighScore)
-            {
-                SaveHighScore(); // Save before destruction
-            }
+            SaveHighScore();
             Instance = null;
+            Debug.Log("[ScoreManager] Instance destroyed and saved");
         }
+    }
+
+    // Debug method to manually complete game (for testing)
+    [System.Diagnostics.Conditional("UNITY_EDITOR")]
+    public void DebugCompleteGame()
+    {
+        currentLevel = totalLevels;
+        OnGameCompleted();
     }
 }

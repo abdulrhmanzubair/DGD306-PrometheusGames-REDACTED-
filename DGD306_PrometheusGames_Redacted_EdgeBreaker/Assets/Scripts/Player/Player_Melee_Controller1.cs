@@ -39,7 +39,11 @@ public class Player_Melee_Controller1 : MonoBehaviour
     private bool isDashing = false;
     private float dashEndTime;
 
-    // DIRECT INPUT ONLY - no PlayerInput system
+    // FLEXIBLE INPUT INTEGRATION
+    private FlexibleInputInjector flexInjector;
+    private SimpleFlexibleInput flexInput;
+
+    // Original components
     private PlayerDeviceInfo deviceInfo;
     private InputDevice assignedDevice;
 
@@ -49,34 +53,41 @@ public class Player_Melee_Controller1 : MonoBehaviour
     private bool guardPressed;
 
     public int PlayerIndex { get; set; }
+    private Keyboard keyboard;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
+        keyboard = Keyboard.current;
     }
 
     void Start()
     {
-        // Get device info from the spawner
-        deviceInfo = GetComponent<PlayerDeviceInfo>();
-        if (deviceInfo != null)
+        // Check for flexible input components (added by AutoFlexibleInputSetup)
+        flexInjector = GetComponent<FlexibleInputInjector>();
+        flexInput = GetComponent<SimpleFlexibleInput>();
+
+        if (flexInjector != null || flexInput != null)
         {
-            assignedDevice = deviceInfo.AssignedDevice;
-            PlayerIndex = deviceInfo.PlayerIndex;
-            Debug.Log($"MeleeController - DIRECT INPUT - PlayerIndex: {PlayerIndex}, Device: {assignedDevice?.name ?? "None"}");
+            Debug.Log($"MeleeController - FLEXIBLE INPUT ACTIVE for Player {PlayerIndex}");
         }
         else
         {
-            Debug.LogError($"MeleeController - No PlayerDeviceInfo found!");
+            // Fallback to original device system
+            deviceInfo = GetComponent<PlayerDeviceInfo>();
+            if (deviceInfo != null)
+            {
+                assignedDevice = deviceInfo.AssignedDevice;
+                PlayerIndex = deviceInfo.PlayerIndex;
+                Debug.Log($"MeleeController - Device: {assignedDevice?.name}, PlayerIndex: {PlayerIndex}");
+            }
         }
     }
 
     void Update()
     {
-        // Handle DIRECT device input only
-        HandleDirectDeviceInput();
-
+        HandleInput();
         CheckGrounded();
         HandleJumping();
         HandleGuard();
@@ -84,131 +95,152 @@ public class Player_Melee_Controller1 : MonoBehaviour
         UpdateAnimator();
     }
 
-    void HandleDirectDeviceInput()
+    void HandleInput()
     {
-        if (assignedDevice == null) return;
+        // PRIORITY 1: Check for flexible input
+        if (flexInjector != null)
+        {
+            moveInput = flexInjector.GetMoveInput();
+            aimDirection = flexInjector.GetAimInput();
 
-        // Handle gamepad input
+            jumpPressed = flexInjector.GetJumpPressed();
+            dashPressed = flexInjector.GetAction2Pressed();
+            guardPressed = flexInjector.GetAction1Pressed();
+
+            return; // Use flexible input, skip original handling
+        }
+
+        // PRIORITY 2: Check SimpleFlexibleInput
+        if (flexInput != null)
+        {
+            moveInput = flexInput.moveInput;
+            aimDirection = flexInput.aimInput;
+
+            jumpPressed = flexInput.jumpPressed;
+            dashPressed = flexInput.action2Pressed;
+            guardPressed = flexInput.action1Pressed;
+
+            return; // Use simple flexible input
+        }
+
+        // FALLBACK: Original input handling
+        HandleOriginalInput();
+    }
+
+    void HandleOriginalInput()
+    {
         if (assignedDevice is Gamepad gamepad)
         {
-            // Movement
-            Vector2 leftStick = gamepad.leftStick.ReadValue();
-            Vector2 dpad = gamepad.dpad.ReadValue();
-            moveInput = leftStick.magnitude > 0.1f ? leftStick : dpad;
+            HandleGamepadInput(gamepad);
+        }
+        else if (assignedDevice is Keyboard || keyboard != null)
+        {
+            HandleKeyboardInput();
+        }
+    }
 
-            // Aim direction (use right stick or default to move direction)
-            Vector2 rightStick = gamepad.rightStick.ReadValue();
-            if (rightStick.magnitude > 0.1f)
-                aimDirection = rightStick;
-            else if (moveInput.magnitude > 0.1f)
-                aimDirection = moveInput;
+    void HandleGamepadInput(Gamepad gamepad)
+    {
+        Vector2 leftStick = gamepad.leftStick.ReadValue();
+        Vector2 dpad = gamepad.dpad.ReadValue();
+        moveInput = leftStick.magnitude > 0.1f ? leftStick : dpad;
 
-            // Jump
-            if (gamepad.buttonSouth.wasPressedThisFrame) // A button
+        Vector2 rightStick = gamepad.rightStick.ReadValue();
+        if (rightStick.magnitude > 0.1f)
+            aimDirection = rightStick;
+        else if (moveInput.magnitude > 0.1f)
+            aimDirection = moveInput;
+
+        if (gamepad.buttonSouth.wasPressedThisFrame)
+            jumpPressed = true;
+        if (gamepad.buttonSouth.wasReleasedThisFrame)
+            jumpPressed = false;
+
+        if (gamepad.buttonWest.wasPressedThisFrame || gamepad.buttonNorth.wasPressedThisFrame)
+            dashPressed = true;
+        if (gamepad.buttonWest.wasReleasedThisFrame || gamepad.buttonNorth.wasReleasedThisFrame)
+            dashPressed = false;
+
+        if (gamepad.rightShoulder.wasPressedThisFrame || gamepad.buttonEast.wasPressedThisFrame)
+            guardPressed = true;
+        if (gamepad.rightShoulder.wasReleasedThisFrame || gamepad.buttonEast.wasReleasedThisFrame)
+            guardPressed = false;
+    }
+
+    void HandleKeyboardInput()
+    {
+        if (keyboard == null) return;
+
+        Vector2 keyboardMove = Vector2.zero;
+
+        // Default to WASD for Player 0, Arrow Keys for Player 1
+        if (PlayerIndex == 0)
+        {
+            if (keyboard.aKey.isPressed) keyboardMove.x -= 1;
+            if (keyboard.dKey.isPressed) keyboardMove.x += 1;
+            if (keyboard.wKey.isPressed) keyboardMove.y += 1;
+            if (keyboard.sKey.isPressed) keyboardMove.y -= 1;
+
+            if (keyboard.spaceKey.wasPressedThisFrame)
                 jumpPressed = true;
-            if (gamepad.buttonSouth.wasReleasedThisFrame)
+            if (keyboard.spaceKey.wasReleasedThisFrame)
                 jumpPressed = false;
 
-            // FIXED: Dash - West Button (X) OR North Button (Triangle/Y)
-            if (gamepad.buttonWest.wasPressedThisFrame || gamepad.buttonNorth.wasPressedThisFrame)
+            if (keyboard.leftShiftKey.wasPressedThisFrame)
                 dashPressed = true;
-            if (gamepad.buttonWest.wasReleasedThisFrame || gamepad.buttonNorth.wasReleasedThisFrame)
+            if (keyboard.leftShiftKey.wasReleasedThisFrame)
                 dashPressed = false;
 
-            // FIXED: Guard - Right Bumper OR East Button (Circle/B) - NO CONFLICT!
-            if (gamepad.rightShoulder.wasPressedThisFrame || gamepad.buttonEast.wasPressedThisFrame)
+            if (keyboard.leftCtrlKey.wasPressedThisFrame)
                 guardPressed = true;
-            if (gamepad.rightShoulder.wasReleasedThisFrame || gamepad.buttonEast.wasReleasedThisFrame)
+            if (keyboard.leftCtrlKey.wasReleasedThisFrame)
                 guardPressed = false;
         }
-        // Handle keyboard input - different keys for each player
-        else if (assignedDevice is Keyboard keyboard)
+        else
         {
-            if (PlayerIndex == 0) // Player 1 keyboard controls
-            {
-                // Movement
-                Vector2 keyboardMove = Vector2.zero;
-                if (keyboard.aKey.isPressed) keyboardMove.x -= 1;
-                if (keyboard.dKey.isPressed) keyboardMove.x += 1;
-                if (keyboard.wKey.isPressed) keyboardMove.y += 1;
-                if (keyboard.sKey.isPressed) keyboardMove.y -= 1;
-                moveInput = keyboardMove;
+            if (keyboard.leftArrowKey.isPressed) keyboardMove.x -= 1;
+            if (keyboard.rightArrowKey.isPressed) keyboardMove.x += 1;
+            if (keyboard.upArrowKey.isPressed) keyboardMove.y += 1;
+            if (keyboard.downArrowKey.isPressed) keyboardMove.y -= 1;
 
-                // Aim direction follows movement
-                if (moveInput.magnitude > 0.1f)
-                    aimDirection = moveInput;
+            if (keyboard.enterKey.wasPressedThisFrame)
+                jumpPressed = true;
+            if (keyboard.enterKey.wasReleasedThisFrame)
+                jumpPressed = false;
 
-                // Jump
-                if (keyboard.spaceKey.wasPressedThisFrame)
-                    jumpPressed = true;
-                if (keyboard.spaceKey.wasReleasedThisFrame)
-                    jumpPressed = false;
+            if (keyboard.rightShiftKey.wasPressedThisFrame)
+                dashPressed = true;
+            if (keyboard.rightShiftKey.wasReleasedThisFrame)
+                dashPressed = false;
 
-                // Dash
-                if (keyboard.leftShiftKey.wasPressedThisFrame)
-                    dashPressed = true;
-                if (keyboard.leftShiftKey.wasReleasedThisFrame)
-                    dashPressed = false;
-
-                // Guard
-                if (keyboard.leftCtrlKey.wasPressedThisFrame)
-                    guardPressed = true;
-                if (keyboard.leftCtrlKey.wasReleasedThisFrame)
-                    guardPressed = false;
-            }
-            else // Player 2 keyboard controls (different keys)
-            {
-                // Movement
-                Vector2 keyboardMove = Vector2.zero;
-                if (keyboard.leftArrowKey.isPressed) keyboardMove.x -= 1;
-                if (keyboard.rightArrowKey.isPressed) keyboardMove.x += 1;
-                if (keyboard.upArrowKey.isPressed) keyboardMove.y += 1;
-                if (keyboard.downArrowKey.isPressed) keyboardMove.y -= 1;
-                moveInput = keyboardMove;
-
-                // Aim direction follows movement
-                if (moveInput.magnitude > 0.1f)
-                    aimDirection = moveInput;
-
-                // Jump
-                if (keyboard.enterKey.wasPressedThisFrame)
-                    jumpPressed = true;
-                if (keyboard.enterKey.wasReleasedThisFrame)
-                    jumpPressed = false;
-
-                // Dash
-                if (keyboard.rightShiftKey.wasPressedThisFrame)
-                    dashPressed = true;
-                if (keyboard.rightShiftKey.wasReleasedThisFrame)
-                    dashPressed = false;
-
-                // Guard
-                if (keyboard.rightCtrlKey.wasPressedThisFrame)
-                    guardPressed = true;
-                if (keyboard.rightCtrlKey.wasReleasedThisFrame)
-                    guardPressed = false;
-            }
+            if (keyboard.rightCtrlKey.wasPressedThisFrame)
+                guardPressed = true;
+            if (keyboard.rightCtrlKey.wasReleasedThisFrame)
+                guardPressed = false;
         }
+
+        moveInput = keyboardMove;
+        if (moveInput.magnitude > 0.1f)
+            aimDirection = moveInput;
     }
 
     void FixedUpdate()
     {
         if (!isDashing)
             Move();
-
         ApplyBetterJump();
     }
 
     public void Initialize(int playerIndex)
     {
         PlayerIndex = playerIndex;
-        Debug.Log($"MeleeController initialized with PlayerIndex: {playerIndex} - DIRECT INPUT MODE");
+        Debug.Log($"MeleeController initialized - PlayerIndex: {playerIndex}");
     }
 
+    // Rest of your existing methods stay the same...
     void Move()
     {
         rb.linearVelocity = new Vector2(moveInput.x * moveSpeed, rb.linearVelocity.y);
-
         if (moveInput.x != 0)
             transform.localScale = new Vector3(Mathf.Sign(moveInput.x), 1f, 1f);
     }
@@ -269,7 +301,6 @@ public class Player_Melee_Controller1 : MonoBehaviour
             Destroy(activeGuard);
             activeGuard = null;
         }
-
         isGuardOnCooldown = true;
         guardCooldownTimer = guardCooldown;
     }
