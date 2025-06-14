@@ -18,6 +18,9 @@ public class GameplayCharacterSpawner : MonoBehaviour
     private Dictionary<int, InputDevice> playerDevices = new Dictionary<int, InputDevice>();
     private bool hasSpawned = false;
 
+    // Camera integration
+    private List<Transform> allSpawnedPlayerTransforms = new List<Transform>();
+
     private void Start()
     {
         DebugLog("=== DIRECT INPUT GAMEPLAY SPAWNER STARTING ===");
@@ -139,20 +142,24 @@ public class GameplayCharacterSpawner : MonoBehaviour
             Debug.LogWarning("No characters were selected! Creating test players.");
             SpawnPlayerCharacter(0, CharacterType.Gunner);
             SpawnPlayerCharacter(1, CharacterType.Melee);
-            return;
         }
-
-        // Spawn each selected character
-        foreach (var kvp in selectedCharacters)
+        else
         {
-            int playerIndex = kvp.Key;
-            CharacterType characterType = kvp.Value;
+            // Spawn each selected character
+            foreach (var kvp in selectedCharacters)
+            {
+                int playerIndex = kvp.Key;
+                CharacterType characterType = kvp.Value;
 
-            DebugLog($"Processing Player {playerIndex + 1} ({characterType})...");
-            SpawnPlayerCharacter(playerIndex, characterType);
+                DebugLog($"Processing Player {playerIndex + 1} ({characterType})...");
+                SpawnPlayerCharacter(playerIndex, characterType);
+            }
         }
 
         DebugLog($"=== SPAWNING COMPLETE - {spawnedPlayers.Count} players spawned ===");
+
+        // Notify camera that all players are spawned
+        NotifyCameraOfSpawnedPlayers();
     }
 
     private void SpawnPlayerCharacter(int playerIndex, CharacterType characterType)
@@ -203,6 +210,10 @@ public class GameplayCharacterSpawner : MonoBehaviour
         // Store reference
         spawnedPlayers[playerIndex] = spawnedPlayer;
 
+        // Add to camera tracking list
+        allSpawnedPlayerTransforms.Add(spawnedPlayer.transform);
+        DebugLog($"  Added {spawnedPlayer.name} to camera tracking list");
+
         DebugLog($"  Player {playerIndex + 1} setup complete!");
     }
 
@@ -247,6 +258,21 @@ public class GameplayCharacterSpawner : MonoBehaviour
         DebugLog($"  DIRECT device input setup complete for Player {playerIndex + 1}");
     }
 
+    private void NotifyCameraOfSpawnedPlayers()
+    {
+        DebugLog($"=== NOTIFYING CAMERA OF {allSpawnedPlayerTransforms.Count} SPAWNED PLAYERS ===");
+
+        // Use static method to notify camera (no setup required)
+        CameraSpawnerBridge.NotifyAllPlayersSpawnedStatic(allSpawnedPlayerTransforms);
+
+        foreach (Transform player in allSpawnedPlayerTransforms)
+        {
+            DebugLog($"  Camera notified about: {player.name}");
+        }
+
+        DebugLog("Camera notification complete!");
+    }
+
     public GameObject GetPlayer(int playerIndex)
     {
         return spawnedPlayers.ContainsKey(playerIndex) ? spawnedPlayers[playerIndex] : null;
@@ -262,6 +288,11 @@ public class GameplayCharacterSpawner : MonoBehaviour
         return playerDevices.ContainsKey(playerIndex) ? playerDevices[playerIndex] : null;
     }
 
+    public List<Transform> GetAllPlayerTransforms()
+    {
+        return new List<Transform>(allSpawnedPlayerTransforms);
+    }
+
     private void DebugLog(string message)
     {
         if (enableDebugLogging)
@@ -269,11 +300,4 @@ public class GameplayCharacterSpawner : MonoBehaviour
             Debug.Log($"[DirectInputSpawner] {message}");
         }
     }
-}
-
-// Simplified device info component
-public class PlayerDeviceInfo : MonoBehaviour
-{
-    public InputDevice AssignedDevice { get; set; }
-    public int PlayerIndex { get; set; }
 }

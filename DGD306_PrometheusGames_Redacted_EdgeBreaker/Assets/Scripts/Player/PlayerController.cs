@@ -121,16 +121,16 @@ public class PlayerController : MonoBehaviour
             if (gamepad.buttonSouth.wasReleasedThisFrame)
                 jumpPressed = false;
 
-            // Fire1 (bullets)
-            if (gamepad.rightTrigger.wasPressedThisFrame) // Right Trigger
+            // Fire1 (bullets) - Right Trigger OR West Button (X)
+            if (gamepad.rightTrigger.wasPressedThisFrame || gamepad.buttonWest.wasPressedThisFrame)
                 fire1Pressed = true;
-            if (gamepad.rightTrigger.wasReleasedThisFrame)
+            if (gamepad.rightTrigger.wasReleasedThisFrame || gamepad.buttonWest.wasReleasedThisFrame)
                 fire1Pressed = false;
 
-            // Fire2 (grenades)
-            if (gamepad.rightShoulder.wasPressedThisFrame) // Right Bumper
+            // Fire2 (grenades) - Right Bumper OR North Button (Triangle/Y)
+            if (gamepad.rightShoulder.wasPressedThisFrame || gamepad.buttonNorth.wasPressedThisFrame)
                 fire2Pressed = true;
-            if (gamepad.rightShoulder.wasReleasedThisFrame)
+            if (gamepad.rightShoulder.wasReleasedThisFrame || gamepad.buttonNorth.wasReleasedThisFrame)
                 fire2Pressed = false;
         }
         // Handle keyboard input - different keys for each player

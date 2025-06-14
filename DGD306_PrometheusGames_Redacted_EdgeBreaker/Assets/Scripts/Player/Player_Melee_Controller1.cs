@@ -109,16 +109,16 @@ public class Player_Melee_Controller1 : MonoBehaviour
             if (gamepad.buttonSouth.wasReleasedThisFrame)
                 jumpPressed = false;
 
-            // Dash
-            if (gamepad.buttonWest.wasPressedThisFrame) // X button
+            // FIXED: Dash - West Button (X) OR North Button (Triangle/Y)
+            if (gamepad.buttonWest.wasPressedThisFrame || gamepad.buttonNorth.wasPressedThisFrame)
                 dashPressed = true;
-            if (gamepad.buttonWest.wasReleasedThisFrame)
+            if (gamepad.buttonWest.wasReleasedThisFrame || gamepad.buttonNorth.wasReleasedThisFrame)
                 dashPressed = false;
 
-            // Guard
-            if (gamepad.rightShoulder.wasPressedThisFrame) // RB button
+            // FIXED: Guard - Right Bumper OR East Button (Circle/B) - NO CONFLICT!
+            if (gamepad.rightShoulder.wasPressedThisFrame || gamepad.buttonEast.wasPressedThisFrame)
                 guardPressed = true;
-            if (gamepad.rightShoulder.wasReleasedThisFrame)
+            if (gamepad.rightShoulder.wasReleasedThisFrame || gamepad.buttonEast.wasReleasedThisFrame)
                 guardPressed = false;
         }
         // Handle keyboard input - different keys for each player

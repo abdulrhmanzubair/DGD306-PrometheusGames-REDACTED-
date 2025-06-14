@@ -8,6 +8,9 @@ TagManager:
   - Enemy
   - EnemyProjectile
   - PlayerColorable
+  - Data
+  - Boundary
+  - Background
   layers:
   - Default
   - TransparentFX
