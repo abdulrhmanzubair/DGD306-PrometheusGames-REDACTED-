@@ -160,7 +160,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      WatchTower_0: 1985335168087562264
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
