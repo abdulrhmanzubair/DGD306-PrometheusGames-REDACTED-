@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 9d33840642b606a4da51172eb4a63133
+guid: be1d49e61c123e842bbadb9c49c8b111
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -669774613729423382
-    second: vladyslav-_0
+      213: 1018966517165119602
+    second: GENAROTR_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,13 +126,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: vladyslav-_0
+      name: GENAROTR_0
       rect:
         serializedVersion: 2
-        x: 0
+        x: 597
         y: 0
-        width: 1920
-        height: 1080
+        width: 427
+        height: 333
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: aef4515998b74b6f0800000000000000
-      internalID: -669774613729423382
+      spriteID: 278d4ad06a8142e00800000000000000
+      internalID: 1018966517165119602
       vertices: []
       indices: 
       edges: []
@@ -160,8 +160,7 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable:
-      vladyslav-_0: -669774613729423382
+    nameFileIdTable: {}
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

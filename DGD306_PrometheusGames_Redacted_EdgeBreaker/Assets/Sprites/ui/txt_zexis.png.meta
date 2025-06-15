@@ -1,10 +1,25 @@
 fileFormatVersion: 2
-guid: 9d33840642b606a4da51172eb4a63133
+guid: 6d2c686378962804986bf5ef1bf6996f
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -669774613729423382
-    second: vladyslav-_0
+      213: 6691858139629821766
+    second: txt_zexis_0
+  - first:
+      213: -926426720975054036
+    second: txt_zexis_1
+  - first:
+      213: 3348535578704181154
+    second: txt_zexis_2
+  - first:
+      213: 110563242363594410
+    second: txt_zexis_3
+  - first:
+      213: -5953171366893366306
+    second: txt_zexis_4
+  - first:
+      213: -5375660511670763990
+    second: txt_zexis_5
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,23 +141,23 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: vladyslav-_0
+      name: txt_zexis_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 1920
-        height: 1080
+        width: 299
+        height: 65
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: aef4515998b74b6f0800000000000000
-      internalID: -669774613729423382
+      spriteID: 3e9c6f9115de50c40a71bb10adeeed40
+      internalID: 1264575804
       vertices: []
       indices: 
       edges: []
@@ -151,7 +166,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: cd79d421b66f6334596afe6ccf5f6a29
     internalID: 0
     vertices: []
     indices: 
@@ -161,7 +176,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      vladyslav-_0: -669774613729423382
+      txt_zexis_0: 1264575804
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -424,7 +424,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5150786773801817825, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5150786773801817825, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
       propertyPath: readyPrompt
@@ -547,7 +547,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 19525008873668765}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f3aa58320e51b8f419c05db5388658a9, type: 3}
   m_Name: 
