@@ -118,6 +118,7 @@ GameObject:
   - component: {fileID: 6396173262621260887}
   - component: {fileID: 1800058790214640491}
   - component: {fileID: 8915041651621599873}
+  - component: {fileID: 2876096935934936629}
   m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
@@ -210,6 +211,25 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &2876096935934936629
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 161595068169940427}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3193bdfe5de1fcc44b3bfb6ad6fd57b8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  autoPosition: 1
+  layoutType: 3
+  marginFromEdge: 50
+  spacingBetweenElements: 20
+  customPosition: {x: 0, y: 0}
+  customAnchor: 8
+  showDebugInfo: 1
 --- !u!1 &1001681102686891232
 GameObject:
   m_ObjectHideFlags: 0
@@ -580,7 +600,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -420.25, y: -38}
+  m_AnchoredPosition: {x: -352, y: 23}
   m_SizeDelta: {x: 160, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &5778620377765859074
@@ -668,7 +688,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -365.1, y: -58.5}
+  m_AnchoredPosition: {x: -296.85, y: 2.5}
   m_SizeDelta: {x: 160, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5682845608509912406
@@ -762,7 +782,7 @@ MonoBehaviour:
   knockbackForce: 0
   targetLayers:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 64
   targetTags:
   - Enemy
   lifetime: 3
@@ -879,7 +899,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -426.4, y: 19.799995}
+  m_AnchoredPosition: {x: -358.15, y: 80.799995}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &6916793272405672928
@@ -920,6 +940,37 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!1 &7702110052050528696
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7944057693084603276}
+  m_Layer: 0
+  m_Name: respawn (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7944057693084603276
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7702110052050528696}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -27.820002, y: 0.15, z: -0.08160261}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 752872871324895113}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8278299548468159083
 GameObject:
   m_ObjectHideFlags: 0
@@ -1071,6 +1122,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 7944057693084603276}
   - {fileID: 371178788198937075}
   - {fileID: 3708767559849024997}
   - {fileID: 180733058049153583}
@@ -1380,17 +1432,23 @@ MonoBehaviour:
   guardLifetime: 3
   attackPoint: {fileID: 8452139274831645909}
   slashEffectPrefab: {fileID: 5077767555971575020}
-  dashForce: 50
-  dashCooldown: 1.5
+  dashDistance: 14
+  dashSpeed: 20
   dashDuration: 0.2
-  slashDamage: 25
-  slashRange: 2
+  slashDamage: 98
+  slashWidth: 3
+  dashCooldown: 2
   enemyLayers:
     serializedVersion: 2
     m_Bits: 4294967295
+  slashRange: 2
+  regularDashForce: 15
+  regularDashCooldown: 1
+  regularDashDuration: 0.15
   slashSounds:
   - {fileID: 8300000, guid: d9419ba0bfac1e84a95418ac5851caf6, type: 3}
   dashSound: {fileID: 8300000, guid: a245ee5d75348c84a89ffb7992f1dc82, type: 3}
+  dashSlashSound: {fileID: 0}
   slashVolume: 0.6
   dashVolume: 0.5
   fallMultiplier: 2.5
@@ -1429,6 +1487,8 @@ MonoBehaviour:
   hurtVolume: 0.7
   deathVolume: 0.8
   healVolume: 0.5
+  respawnDelay: 3
+  respawnPoint: {fileID: 7944057693084603276}
   deathEffectPrefab: {fileID: 0}
 --- !u!1 &9114657336432228754
 GameObject:

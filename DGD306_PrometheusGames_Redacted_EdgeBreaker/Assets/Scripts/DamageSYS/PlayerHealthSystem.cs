@@ -3,8 +3,8 @@ using UnityEngine.UI;
 using System.Collections;
 
 /// <summary>
-/// Updated PlayerHealthSystem that works with GameLifeManager
-/// Handles health but lets GameLifeManager handle lives and respawning
+/// Universal health system for all player types (Gunner, Melee, etc.)
+/// Handles damage, healing, death, and UI updates
 /// </summary>
 public class PlayerHealthSystem : MonoBehaviour, IDamageable
 {
@@ -12,7 +12,7 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
     public int maxHealth = 100;
     public int currentHealth;
     public bool canTakeDamage = true;
-    public float invulnerabilityTime = 1f;
+    public float invulnerabilityTime = 1f; // Time after taking damage where player can't be hurt
 
     [Header("Health UI")]
     public Slider healthBar;
@@ -26,7 +26,7 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
     public SpriteRenderer playerSprite;
     public Color damageFlashColor = Color.red;
     public float flashDuration = 0.1f;
-    public GameObject damageTextPrefab;
+    public GameObject damageTextPrefab; // Optional floating damage text
 
     [Header("Audio")]
     public AudioClip[] hurtSounds;
@@ -37,6 +37,8 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
     [Range(0f, 1f)] public float healVolume = 0.5f;
 
     [Header("Death Settings")]
+    public float respawnDelay = 3f;
+    public Transform respawnPoint;
     public GameObject deathEffectPrefab;
 
     // Private variables
@@ -47,16 +49,16 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
     private Rigidbody2D rb;
     private Collider2D playerCollider;
 
-    // Public properties - Fixed the compilation errors
-    public int PlayerIndex { get; set; }
-    public bool IsAlive { get { return !isDead; } }
-    public bool IsInvulnerable { get { return isInvulnerable; } }
-
     // Events
     public event System.Action<int, int> OnHealthChanged; // (currentHealth, maxHealth)
     public event System.Action OnPlayerDeath;
     public event System.Action OnPlayerRespawn;
     public event System.Action<float> OnDamageTaken; // (damage amount)
+
+    // Public properties
+    public int PlayerIndex { get; set; }
+    public bool IsAlive { get { return !isDead; } }
+    public bool IsInvulnerable { get { return isInvulnerable; } }
 
     void Start()
     {
@@ -87,6 +89,12 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
         if (playerSprite != null)
         {
             originalSpriteColor = playerSprite.color;
+        }
+
+        // Set up respawn point if not assigned
+        if (respawnPoint == null)
+        {
+            respawnPoint = transform;
         }
 
         // Initialize UI
@@ -174,13 +182,16 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
         // Play death sound
         PlayDeathSound();
 
+        // Trigger death event
+        OnPlayerDeath?.Invoke();
+
         // Stop movement
         if (rb != null)
         {
             rb.linearVelocity = Vector2.zero;
         }
 
-        // Disable player controls and collision temporarily
+        // Disable player controls and collision
         SetPlayerActive(false);
 
         // Spawn death effect
@@ -190,11 +201,20 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
             Destroy(deathEffect, 3f);
         }
 
-        // Trigger death event - GameLifeManager will handle respawn logic
-        OnPlayerDeath?.Invoke();
+        // Start respawn timer
+        if (respawnDelay > 0)
+        {
+            StartCoroutine(RespawnCoroutine());
+        }
 
         // Update UI
         UpdateHealthUI();
+    }
+
+    IEnumerator RespawnCoroutine()
+    {
+        yield return new WaitForSeconds(respawnDelay);
+        Respawn();
     }
 
     public void Respawn()
@@ -205,6 +225,9 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
         currentHealth = maxHealth;
         isDead = false;
         isInvulnerable = false;
+
+        // Move to respawn point
+        transform.position = respawnPoint.position;
 
         // Reset sprite color
         if (playerSprite != null)
@@ -251,7 +274,7 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
         if (playerSprite != null)
         {
             Color color = playerSprite.color;
-            color.a = active ? 1f : 0.3f; // Make semi-transparent when dead
+            color.a = active ? 1f : 0.5f;
             playerSprite.color = color;
         }
     }
@@ -277,7 +300,7 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
         }
 
         // Restore original color
-        if (playerSprite != null && !isDead)
+        if (playerSprite != null)
         {
             playerSprite.color = originalSpriteColor;
         }
@@ -292,7 +315,7 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
             playerSprite.color = damageFlashColor;
             yield return new WaitForSeconds(flashDuration);
 
-            if (!isInvulnerable && !isDead) // Don't restore if other effects are active
+            if (!isInvulnerable) // Don't restore if invulnerability flashing is active
             {
                 playerSprite.color = originalSpriteColor;
             }
@@ -310,14 +333,6 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
             if (textComponent != null)
             {
                 textComponent.text = $"-{damage}";
-                textComponent.color = Color.red;
-            }
-
-            // Try to use FloatingText component
-            FloatingText floatingText = damageText.GetComponent<FloatingText>();
-            if (floatingText != null)
-            {
-                floatingText.SetDamageText(damage);
             }
 
             // Auto-destroy damage text
@@ -348,24 +363,16 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
         // Update health text
         if (healthText != null)
         {
-            if (isDead)
-            {
-                healthText.text = "DEAD";
-                healthText.color = Color.red;
-            }
-            else
-            {
-                healthText.text = $"{currentHealth}/{maxHealth}";
+            healthText.text = $"{currentHealth}/{maxHealth}";
 
-                // Change text color based on health
-                float healthPercentage = (float)currentHealth / maxHealth;
-                if (healthPercentage > 0.6f)
-                    healthText.color = healthyColor;
-                else if (healthPercentage > 0.3f)
-                    healthText.color = damagedColor;
-                else
-                    healthText.color = criticalColor;
-            }
+            // Change text color based on health
+            float healthPercentage = (float)currentHealth / maxHealth;
+            if (healthPercentage > 0.6f)
+                healthText.color = healthyColor;
+            else if (healthPercentage > 0.3f)
+                healthText.color = damagedColor;
+            else
+                healthText.color = criticalColor;
         }
     }
 
@@ -388,8 +395,9 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
     }
 
     // Public methods for external access
+    public bool IsAliveMethod() => !isDead;
+    public bool IsInvulnerableMethod() => isInvulnerable;
     public float GetHealthPercentage() => (float)currentHealth / maxHealth;
-
     public void SetMaxHealth(int newMaxHealth)
     {
         maxHealth = newMaxHealth;
@@ -414,21 +422,6 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
         isInvulnerable = true;
         yield return new WaitForSeconds(duration);
         isInvulnerable = false;
-    }
-
-    // Reset method for respawning
-    public void ResetForRespawn()
-    {
-        currentHealth = maxHealth;
-        isDead = false;
-        isInvulnerable = false;
-
-        if (playerSprite != null)
-        {
-            playerSprite.color = originalSpriteColor;
-        }
-
-        UpdateHealthUI();
     }
 
     // Debug methods

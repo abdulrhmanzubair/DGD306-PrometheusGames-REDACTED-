@@ -1,8 +1,10 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Collections.Generic;
 
 /// <summary>
-/// Enhanced melee controller with proper damage dealing and receiving
+/// Bulletproof melee controller with reliable Genji-style dash slash
+/// Based on proven Unity 2D melee combat patterns
 /// </summary>
 public class Player_Melee_Controller1 : MonoBehaviour
 {
@@ -18,19 +20,27 @@ public class Player_Melee_Controller1 : MonoBehaviour
     public float guardCooldown = 5f;
     public float guardLifetime = 10f;
 
-    [Header("Slash Attack")]
+    [Header("Genji Dash Slash - Reliable System")]
     public Transform attackPoint;
-    public GameObject slashEffectPrefab; // Use EnhancedSlashEffect prefab
-    public float dashForce = 20f;
-    public float dashCooldown = 1f;
-    public float dashDuration = 0.15f;
-    public float slashDamage = 25f;
-    public float slashRange = 2f;
+    public GameObject slashEffectPrefab;
+    public float dashDistance = 6f;
+    public float dashSpeed = 20f;
+    public float dashDuration = 0.3f;
+    public float slashDamage = 35f;
+    public float slashWidth = 2.5f;
+    public float dashCooldown = 2f;
     public LayerMask enemyLayers = -1;
+
+    [Header("Regular Attacks")]
+    public float slashRange = 2f;
+    public float regularDashForce = 15f;
+    public float regularDashCooldown = 1f;
+    public float regularDashDuration = 0.15f;
 
     [Header("Combat Audio")]
     public AudioClip[] slashSounds;
     public AudioClip dashSound;
+    public AudioClip dashSlashSound;
     [Range(0f, 1f)] public float slashVolume = 0.6f;
     [Range(0f, 1f)] public float dashVolume = 0.5f;
 
@@ -38,6 +48,7 @@ public class Player_Melee_Controller1 : MonoBehaviour
     public float fallMultiplier = 2.5f;
     public float lowJumpMultiplier = 2f;
 
+    // Core components
     private Rigidbody2D rb;
     private Animator animator;
     private AudioSource audioSource;
@@ -46,19 +57,28 @@ public class Player_Melee_Controller1 : MonoBehaviour
     private Vector2 moveInput;
     private Vector2 aimDirection = Vector2.right;
 
+    // Guard system
     private bool isGuardOnCooldown = false;
     private float guardCooldownTimer = 0f;
     private GameObject activeGuard;
 
-    private float lastDashTime = -999f;
-    private bool isDashing = false;
-    private float dashEndTime;
+    // Genji dash slash system - Bulletproof implementation
+    private bool isDashSlashing = false;
+    private float dashSlashStartTime;
+    private float lastDashSlashTime = -999f;
+    private Vector2 dashStartPosition;
+    private Vector2 dashTargetPosition;
+    private Vector2 dashDirection;
+    private HashSet<GameObject> hitTargetsThisDash = new HashSet<GameObject>();
 
-    // FLEXIBLE INPUT INTEGRATION
+    // Regular dash system
+    private float lastRegularDashTime = -999f;
+    private bool isRegularDashing = false;
+    private float regularDashEndTime;
+
+    // Input integration
     private FlexibleInputInjector flexInjector;
     private SimpleFlexibleInput flexInput;
-
-    // Original components
     private PlayerDeviceInfo deviceInfo;
     private InputDevice assignedDevice;
 
@@ -77,7 +97,7 @@ public class Player_Melee_Controller1 : MonoBehaviour
         animator = GetComponent<Animator>();
         keyboard = Keyboard.current;
 
-        // Set up audio
+        // Setup audio
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null)
         {
@@ -86,7 +106,7 @@ public class Player_Melee_Controller1 : MonoBehaviour
         audioSource.playOnAwake = false;
         audioSource.spatialBlend = 0.3f;
 
-        // Get health system
+        // Setup health system
         healthSystem = GetComponent<PlayerHealthSystem>();
         if (healthSystem == null)
         {
@@ -97,7 +117,7 @@ public class Player_Melee_Controller1 : MonoBehaviour
 
     void Start()
     {
-        // Check for flexible input components (added by AutoFlexibleInputSetup)
+        // Check for flexible input integration
         flexInjector = GetComponent<FlexibleInputInjector>();
         flexInput = GetComponent<SimpleFlexibleInput>();
 
@@ -107,7 +127,7 @@ public class Player_Melee_Controller1 : MonoBehaviour
         }
         else
         {
-            // Fallback to original device system
+            // Fallback to device system
             deviceInfo = GetComponent<PlayerDeviceInfo>();
             if (deviceInfo != null)
             {
@@ -117,7 +137,7 @@ public class Player_Melee_Controller1 : MonoBehaviour
             }
         }
 
-        // Set health system player index
+        // Initialize health system
         if (healthSystem != null)
         {
             healthSystem.PlayerIndex = PlayerIndex;
@@ -126,7 +146,7 @@ public class Player_Melee_Controller1 : MonoBehaviour
 
     void Update()
     {
-        // Don't accept input if dead
+        // Skip input if dead
         if (healthSystem != null && !healthSystem.IsAlive)
         {
             return;
@@ -136,46 +156,45 @@ public class Player_Melee_Controller1 : MonoBehaviour
         CheckGrounded();
         HandleJumping();
         HandleGuard();
-        HandleDashAttack();
-        HandleMeleeAttack();
+        HandleGenjiDashSlash();
+        HandleRegularDash();
         UpdateAnimator();
     }
 
     void HandleInput()
     {
-        // PRIORITY 1: Check for flexible input
+        // Reset input states
+        jumpPressed = dashPressed = guardPressed = attackPressed = false;
+
+        // Priority 1: Flexible input injector
         if (flexInjector != null)
         {
             moveInput = flexInjector.GetMoveInput();
             aimDirection = flexInjector.GetAimInput();
-
             jumpPressed = flexInjector.GetJumpPressed();
             dashPressed = flexInjector.GetAction2Pressed();
             guardPressed = flexInjector.GetAction1Pressed();
-            attackPressed = flexInjector.GetAction1Pressed(); // Use action1 for attack instead
-
-            return; // Use flexible input, skip original handling
+            attackPressed = flexInjector.GetAction1Pressed();
+            return;
         }
 
-        // PRIORITY 2: Check SimpleFlexibleInput
+        // Priority 2: Simple flexible input
         if (flexInput != null)
         {
             moveInput = flexInput.moveInput;
             aimDirection = flexInput.aimInput;
-
             jumpPressed = flexInput.jumpPressed;
             dashPressed = flexInput.action2Pressed;
             guardPressed = flexInput.action1Pressed;
             attackPressed = flexInput.action1Pressed;
-
-            return; // Use simple flexible input
+            return;
         }
 
-        // FALLBACK: Original input handling
-        HandleOriginalInput();
+        // Fallback: Direct input handling
+        HandleDirectInput();
     }
 
-    void HandleOriginalInput()
+    void HandleDirectInput()
     {
         if (assignedDevice is Gamepad gamepad)
         {
@@ -189,35 +208,25 @@ public class Player_Melee_Controller1 : MonoBehaviour
 
     void HandleGamepadInput(Gamepad gamepad)
     {
+        // Movement
         Vector2 leftStick = gamepad.leftStick.ReadValue();
         Vector2 dpad = gamepad.dpad.ReadValue();
         moveInput = leftStick.magnitude > 0.1f ? leftStick : dpad;
 
+        // Aiming
         Vector2 rightStick = gamepad.rightStick.ReadValue();
         if (rightStick.magnitude > 0.1f)
             aimDirection = rightStick;
         else if (moveInput.magnitude > 0.1f)
             aimDirection = moveInput;
 
-        if (gamepad.buttonSouth.wasPressedThisFrame)
-            jumpPressed = true;
-        if (gamepad.buttonSouth.wasReleasedThisFrame)
-            jumpPressed = false;
+        // Buttons
+        jumpPressed = gamepad.buttonSouth.wasPressedThisFrame; // A button
+        dashPressed = gamepad.buttonEast.wasPressedThisFrame;  // B button (regular dash)
 
-        if (gamepad.buttonWest.wasPressedThisFrame || gamepad.buttonNorth.wasPressedThisFrame)
-            dashPressed = true;
-        if (gamepad.buttonWest.wasReleasedThisFrame || gamepad.buttonNorth.wasReleasedThisFrame)
-            dashPressed = false;
-
-        if (gamepad.rightShoulder.wasPressedThisFrame || gamepad.buttonEast.wasPressedThisFrame)
-            guardPressed = true;
-        if (gamepad.rightShoulder.wasReleasedThisFrame || gamepad.buttonEast.wasReleasedThisFrame)
-            guardPressed = false;
-
-        if (gamepad.rightTrigger.wasPressedThisFrame || gamepad.leftShoulder.wasPressedThisFrame)
-            attackPressed = true;
-        if (gamepad.rightTrigger.wasReleasedThisFrame || gamepad.leftShoulder.wasReleasedThisFrame)
-            attackPressed = false;
+        // SWAPPED CONTROLS:
+        guardPressed = gamepad.buttonNorth.wasPressedThisFrame;  // Y button (Triangle) - GUARD
+        attackPressed = gamepad.buttonWest.wasPressedThisFrame; // X button (Square) - GENJI SLASH
     }
 
     void HandleKeyboardInput()
@@ -226,60 +235,31 @@ public class Player_Melee_Controller1 : MonoBehaviour
 
         Vector2 keyboardMove = Vector2.zero;
 
-        // Default to WASD for Player 0, Arrow Keys for Player 1
         if (PlayerIndex == 0)
         {
+            // Player 1 - WASD
             if (keyboard.aKey.isPressed) keyboardMove.x -= 1;
             if (keyboard.dKey.isPressed) keyboardMove.x += 1;
             if (keyboard.wKey.isPressed) keyboardMove.y += 1;
             if (keyboard.sKey.isPressed) keyboardMove.y -= 1;
 
-            if (keyboard.spaceKey.wasPressedThisFrame)
-                jumpPressed = true;
-            if (keyboard.spaceKey.wasReleasedThisFrame)
-                jumpPressed = false;
-
-            if (keyboard.leftShiftKey.wasPressedThisFrame)
-                dashPressed = true;
-            if (keyboard.leftShiftKey.wasReleasedThisFrame)
-                dashPressed = false;
-
-            if (keyboard.leftCtrlKey.wasPressedThisFrame)
-                guardPressed = true;
-            if (keyboard.leftCtrlKey.wasReleasedThisFrame)
-                guardPressed = false;
-
-            if (keyboard.fKey.wasPressedThisFrame)
-                attackPressed = true;
-            if (keyboard.fKey.wasReleasedThisFrame)
-                attackPressed = false;
+            jumpPressed = keyboard.spaceKey.wasPressedThisFrame;
+            dashPressed = keyboard.leftShiftKey.wasPressedThisFrame;
+            guardPressed = keyboard.leftCtrlKey.wasPressedThisFrame;
+            attackPressed = keyboard.fKey.wasPressedThisFrame;
         }
         else
         {
+            // Player 2 - Arrow keys
             if (keyboard.leftArrowKey.isPressed) keyboardMove.x -= 1;
             if (keyboard.rightArrowKey.isPressed) keyboardMove.x += 1;
             if (keyboard.upArrowKey.isPressed) keyboardMove.y += 1;
             if (keyboard.downArrowKey.isPressed) keyboardMove.y -= 1;
 
-            if (keyboard.enterKey.wasPressedThisFrame)
-                jumpPressed = true;
-            if (keyboard.enterKey.wasReleasedThisFrame)
-                jumpPressed = false;
-
-            if (keyboard.rightShiftKey.wasPressedThisFrame)
-                dashPressed = true;
-            if (keyboard.rightShiftKey.wasReleasedThisFrame)
-                dashPressed = false;
-
-            if (keyboard.rightCtrlKey.wasPressedThisFrame)
-                guardPressed = true;
-            if (keyboard.rightCtrlKey.wasReleasedThisFrame)
-                guardPressed = false;
-
-            if (keyboard.numpad0Key.wasPressedThisFrame)
-                attackPressed = true;
-            if (keyboard.numpad0Key.wasReleasedThisFrame)
-                attackPressed = false;
+            jumpPressed = keyboard.enterKey.wasPressedThisFrame;
+            dashPressed = keyboard.rightShiftKey.wasPressedThisFrame;
+            guardPressed = keyboard.rightCtrlKey.wasPressedThisFrame;
+            attackPressed = keyboard.numpad0Key.wasPressedThisFrame;
         }
 
         moveInput = keyboardMove;
@@ -289,9 +269,16 @@ public class Player_Melee_Controller1 : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (!isDashing && (healthSystem == null || healthSystem.IsAlive))
+        if (!isDashSlashing && !isRegularDashing && (healthSystem == null || healthSystem.IsAlive))
             Move();
+
         ApplyBetterJump();
+
+        // Handle dash slash movement in physics update
+        if (isDashSlashing)
+        {
+            UpdateDashSlashMovement();
+        }
     }
 
     public void Initialize(int playerIndex)
@@ -299,7 +286,6 @@ public class Player_Melee_Controller1 : MonoBehaviour
         PlayerIndex = playerIndex;
         Debug.Log($"MeleeController initialized - PlayerIndex: {playerIndex}");
 
-        // Set health system player index
         if (healthSystem != null)
         {
             healthSystem.PlayerIndex = PlayerIndex;
@@ -323,7 +309,6 @@ public class Player_Melee_Controller1 : MonoBehaviour
         if (jumpPressed && isGrounded)
         {
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
-            jumpPressed = false;
         }
     }
 
@@ -341,159 +326,271 @@ public class Player_Melee_Controller1 : MonoBehaviour
 
     void HandleGuard()
     {
-        if (guardPressed && !isGuardOnCooldown && activeGuard == null)
-        {
-            GameObject guard = Instantiate(guardPrefab, guardSpawnPoint.position, Quaternion.identity);
-            GuardBehavior behavior = guard.GetComponent<GuardBehavior>();
-            if (behavior != null)
-            {
-                behavior.SetOwner(this);
-                behavior.SetLifetime(guardLifetime);
-            }
-            activeGuard = guard;
-            guardPressed = false;
-        }
-
         if (isGuardOnCooldown)
         {
             guardCooldownTimer -= Time.deltaTime;
             if (guardCooldownTimer <= 0f)
+            {
                 isGuardOnCooldown = false;
+            }
         }
+
+        if (guardPressed && !isGuardOnCooldown && activeGuard == null)
+        {
+            SpawnGuard();
+        }
+    }
+
+    void SpawnGuard()
+    {
+        if (guardPrefab == null || guardSpawnPoint == null) return;
+
+        GameObject guard = Instantiate(guardPrefab, guardSpawnPoint.position, Quaternion.identity);
+        GuardBehavior behavior = guard.GetComponent<GuardBehavior>();
+        if (behavior != null)
+        {
+            behavior.SetOwner(this);
+            behavior.SetLifetime(guardLifetime);
+        }
+        activeGuard = guard;
     }
 
     public void OnGuardDestroyed()
     {
-        if (activeGuard != null)
-        {
-            Destroy(activeGuard);
-            activeGuard = null;
-        }
+        activeGuard = null;
         isGuardOnCooldown = true;
         guardCooldownTimer = guardCooldown;
     }
 
-    void HandleDashAttack()
+    // BULLETPROOF GENJI DASH SLASH
+    void HandleGenjiDashSlash()
     {
-        if (dashPressed && Time.time >= lastDashTime + dashCooldown)
+        // Start dash slash
+        if (attackPressed && CanStartDashSlash())
         {
-            Vector2 dashDir = aimDirection.magnitude > 0.1f ? aimDirection : Vector2.right;
-            StartDash(dashDir);
-            dashPressed = false;
+            StartDashSlash();
         }
 
-        if (isDashing && Time.time > dashEndTime)
+        // Continue dash slash
+        if (isDashSlashing)
         {
-            isDashing = false;
+            ContinueDashSlash();
+        }
+    }
+
+    bool CanStartDashSlash()
+    {
+        return !isDashSlashing &&
+               !isRegularDashing &&
+               Time.time >= lastDashSlashTime + dashCooldown;
+    }
+
+    void StartDashSlash()
+    {
+        // Calculate dash direction
+        dashDirection = aimDirection.magnitude > 0.1f ? aimDirection.normalized : Vector2.right;
+
+        // Set facing direction
+        if (dashDirection.x != 0)
+            transform.localScale = new Vector3(Mathf.Sign(dashDirection.x), 1, 1);
+
+        // Setup dash parameters
+        dashStartPosition = transform.position;
+        dashTargetPosition = dashStartPosition + dashDirection * dashDistance;
+
+        // Initialize dash state
+        isDashSlashing = true;
+        dashSlashStartTime = Time.time;
+        lastDashSlashTime = Time.time;
+        hitTargetsThisDash.Clear();
+
+        // Audio feedback
+        PlayDashSlashSound();
+
+        // Animation
+        if (animator != null)
+        {
+            animator.SetTrigger("Attack");
+        }
+
+        Debug.Log($"Player {PlayerIndex} started Genji dash slash!");
+    }
+
+    void ContinueDashSlash()
+    {
+        float elapsed = Time.time - dashSlashStartTime;
+
+        // Check if dash is complete
+        if (elapsed >= dashDuration)
+        {
+            EndDashSlash();
+            return;
+        }
+
+        // Continuous damage detection during dash
+        PerformDashSlashDamage();
+    }
+
+    void UpdateDashSlashMovement()
+    {
+        if (!isDashSlashing) return;
+
+        float elapsed = Time.time - dashSlashStartTime;
+        float progress = elapsed / dashDuration;
+        progress = Mathf.Clamp01(progress);
+
+        // Smooth dash movement
+        Vector2 currentPosition = Vector2.Lerp(dashStartPosition, dashTargetPosition, progress);
+        rb.MovePosition(currentPosition);
+    }
+
+    void PerformDashSlashDamage()
+    {
+        // Create attack area
+        Vector2 currentPos = transform.position;
+        Vector2 boxSize = new Vector2(slashWidth, slashWidth);
+
+        // Find all potential targets
+        Collider2D[] potentialTargets = Physics2D.OverlapBoxAll(currentPos, boxSize, 0f, enemyLayers);
+
+        foreach (Collider2D target in potentialTargets)
+        {
+            // Validate target
+            if (!IsValidTarget(target)) continue;
+
+            // Prevent multiple hits per dash
+            if (hitTargetsThisDash.Contains(target.gameObject)) continue;
+
+            // Deal damage
+            DealDamageToTarget(target);
+
+            // Mark as hit
+            hitTargetsThisDash.Add(target.gameObject);
+        }
+    }
+
+    bool IsValidTarget(Collider2D target)
+    {
+        return target != null &&
+               target.gameObject != gameObject &&
+               target.CompareTag("Enemy");
+    }
+
+    void DealDamageToTarget(Collider2D target)
+    {
+        // Try IDamageable interface first
+        IDamageable damageable = target.GetComponent<IDamageable>();
+        if (damageable != null)
+        {
+            damageable.TakeDamage(slashDamage);
+            Debug.Log($"Genji dash hit {target.name} for {slashDamage} damage!");
+        }
+        else
+        {
+            // Fallback to UniversalEnemyHealth
+            UniversalEnemyHealth enemyHealth = target.GetComponent<UniversalEnemyHealth>();
+            if (enemyHealth != null)
+            {
+                enemyHealth.TakeDamage(slashDamage);
+                Debug.Log($"Genji dash hit {target.name} via UniversalEnemyHealth!");
+            }
+        }
+
+        // Apply effects
+        ApplyKnockback(target);
+        SpawnHitEffect(target.transform.position);
+        PlayHitSound();
+    }
+
+    void ApplyKnockback(Collider2D target)
+    {
+        Rigidbody2D targetRb = target.GetComponent<Rigidbody2D>();
+        if (targetRb != null)
+        {
+            Vector2 knockbackDir = dashDirection;
+            targetRb.AddForce(knockbackDir * 8f, ForceMode2D.Impulse);
+        }
+    }
+
+    void SpawnHitEffect(Vector3 position)
+    {
+        if (slashEffectPrefab != null)
+        {
+            GameObject effect = Instantiate(slashEffectPrefab, position, Quaternion.identity);
+            Destroy(effect, 1f);
+        }
+    }
+
+    void PlayDashSlashSound()
+    {
+        if (dashSlashSound != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(dashSlashSound, dashVolume);
+        }
+        else if (slashSounds.Length > 0 && audioSource != null)
+        {
+            AudioClip sound = slashSounds[Random.Range(0, slashSounds.Length)];
+            audioSource.PlayOneShot(sound, slashVolume);
+        }
+    }
+
+    void PlayHitSound()
+    {
+        if (slashSounds.Length > 0 && audioSource != null)
+        {
+            AudioClip sound = slashSounds[Random.Range(0, slashSounds.Length)];
+            audioSource.PlayOneShot(sound, slashVolume * 0.7f);
+        }
+    }
+
+    void EndDashSlash()
+    {
+        isDashSlashing = false;
+        Debug.Log($"Player {PlayerIndex} Genji dash completed - hit {hitTargetsThisDash.Count} enemies");
+    }
+
+    // REGULAR DASH (Non-damage)
+    void HandleRegularDash()
+    {
+        if (dashPressed && CanStartRegularDash())
+        {
+            StartRegularDash();
+        }
+
+        if (isRegularDashing && Time.time > regularDashEndTime)
+        {
+            isRegularDashing = false;
             rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
         }
     }
 
-    void StartDash(Vector2 direction)
+    bool CanStartRegularDash()
     {
-        isDashing = true;
-        dashEndTime = Time.time + dashDuration;
-        lastDashTime = Time.time;
+        return !isDashSlashing &&
+               !isRegularDashing &&
+               Time.time >= lastRegularDashTime + regularDashCooldown;
+    }
 
-        rb.linearVelocity = direction.normalized * dashForce;
+    void StartRegularDash()
+    {
+        Vector2 dashDir = aimDirection.magnitude > 0.1f ? aimDirection : Vector2.right;
 
-        if (direction.x != 0)
-            transform.localScale = new Vector3(Mathf.Sign(direction.x), 1, 1);
+        isRegularDashing = true;
+        regularDashEndTime = Time.time + regularDashDuration;
+        lastRegularDashTime = Time.time;
 
-        // Play dash sound
+        rb.linearVelocity = dashDir.normalized * regularDashForce;
+
+        if (dashDir.x != 0)
+            transform.localScale = new Vector3(Mathf.Sign(dashDir.x), 1, 1);
+
         if (dashSound != null && audioSource != null)
         {
             audioSource.PlayOneShot(dashSound, dashVolume);
         }
 
-        string animTrigger = "DashForward";
-        if (direction.y > 0.5f) animTrigger = "DashUp";
-        else if (direction.y < -0.5f) animTrigger = "DashDown";
-
         if (animator != null)
-            animator.SetTrigger(animTrigger);
-    }
-
-    void HandleMeleeAttack()
-    {
-        if (attackPressed)
-        {
-            PerformSlashAttack();
-            attackPressed = false;
-        }
-    }
-
-    void PerformSlashAttack()
-    {
-        Debug.Log($"Player {PlayerIndex} performing slash attack!");
-
-        // Play slash sound
-        if (slashSounds.Length > 0 && audioSource != null)
-        {
-            AudioClip slashClip = slashSounds[Random.Range(0, slashSounds.Length)];
-            audioSource.PlayOneShot(slashClip, slashVolume);
-        }
-
-        // Create slash effect
-        Vector3 slashPosition = attackPoint != null ? attackPoint.position : transform.position;
-        Vector2 attackDirection = aimDirection.magnitude > 0.1f ? aimDirection : Vector2.right;
-
-        if (slashEffectPrefab != null)
-        {
-            GameObject slashEffect = Instantiate(slashEffectPrefab, slashPosition, Quaternion.identity);
-
-            // Configure the enhanced slash effect
-            EnhancedSlashEffect slashScript = slashEffect.GetComponent<EnhancedSlashEffect>();
-            if (slashScript != null)
-            {
-                slashScript.SetDamage(slashDamage);
-                slashScript.AddTargetTag("Enemy");
-            }
-
-            // Orient slash effect based on attack direction
-            float angle = Mathf.Atan2(attackDirection.y, attackDirection.x) * Mathf.Rad2Deg;
-            slashEffect.transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
-        }
-        else
-        {
-            // Fallback: direct damage detection
-            PerformDirectSlashDamage(slashPosition, attackDirection);
-        }
-
-        // Trigger attack animation
-        if (animator != null)
-        {
-            animator.SetTrigger("Attack");
-        }
-    }
-
-    void PerformDirectSlashDamage(Vector3 attackPosition, Vector2 attackDirection)
-    {
-        // Use circle cast for slash damage
-        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPosition, slashRange, enemyLayers);
-
-        foreach (Collider2D enemy in hitEnemies)
-        {
-            // Check if it's an enemy
-            if (enemy.CompareTag("Enemy"))
-            {
-                // Deal damage
-                IDamageable damageable = enemy.GetComponent<IDamageable>();
-                if (damageable != null)
-                {
-                    damageable.TakeDamage(slashDamage);
-                    Debug.Log($"Slash hit {enemy.name} for {slashDamage} damage!");
-                }
-
-                // Apply knockback
-                Rigidbody2D enemyRb = enemy.GetComponent<Rigidbody2D>();
-                if (enemyRb != null)
-                {
-                    Vector2 knockbackDirection = (enemy.transform.position - transform.position).normalized;
-                    enemyRb.AddForce(knockbackDirection * 5f, ForceMode2D.Impulse);
-                }
-            }
-        }
+            animator.SetTrigger("Dash");
     }
 
     void UpdateAnimator()
@@ -503,14 +600,9 @@ public class Player_Melee_Controller1 : MonoBehaviour
             animator.SetFloat("xVelocity", Mathf.Abs(rb.linearVelocity.x));
             animator.SetFloat("yVelocity", rb.linearVelocity.y);
             animator.SetBool("isGrounded", isGrounded);
-
-            bool isJumping = !isGrounded && rb.linearVelocity.y > 0.1f;
-            animator.SetBool("isJumping", isJumping);
-
-            // Set guard state
+            animator.SetBool("isJumping", !isGrounded && rb.linearVelocity.y > 0.1f);
             animator.SetBool("hasGuard", activeGuard != null);
 
-            // Set invulnerability state
             if (healthSystem != null)
             {
                 animator.SetBool("isInvulnerable", healthSystem.IsInvulnerable);
@@ -518,39 +610,26 @@ public class Player_Melee_Controller1 : MonoBehaviour
         }
     }
 
-    // Handle taking damage from enemies
+    // Damage handling
     void OnTriggerEnter2D(Collider2D other)
     {
-        // Take damage from enemy projectiles
         if (other.CompareTag("EnemyProjectile"))
         {
             Bullet bullet = other.GetComponent<Bullet>();
             if (bullet != null && healthSystem != null)
             {
                 healthSystem.TakeDamage(bullet.damage);
-                Debug.Log($"Player {PlayerIndex} hit by enemy bullet for {bullet.damage} damage!");
             }
         }
 
-        // Take damage from enemy contact (if no guard)
-        if (other.CompareTag("Enemy") && activeGuard == null)
+        // No contact damage during dash slash (invincible frames)
+        if (other.CompareTag("Enemy") && activeGuard == null && !isDashSlashing)
         {
             if (healthSystem != null)
             {
-                float contactDamage = 15f; // Default contact damage
-
-                // Try to get specific enemy damage
-                UniversalEnemyHealth enemyHealth = other.GetComponent<UniversalEnemyHealth>();
-                if (enemyHealth != null)
-                {
-                    // Could have contact damage property on enemy
-                    contactDamage = 10f; // Basic enemy contact damage
-                }
-
+                float contactDamage = 15f;
                 healthSystem.TakeDamage(contactDamage);
-                Debug.Log($"Player {PlayerIndex} hit by enemy contact for {contactDamage} damage!");
 
-                // Push player away from enemy
                 Vector2 pushDirection = (transform.position - other.transform.position).normalized;
                 if (rb != null)
                 {
@@ -560,62 +639,52 @@ public class Player_Melee_Controller1 : MonoBehaviour
         }
     }
 
-    // Public methods for external access
-    public bool IsGuardActive()
-    {
-        return activeGuard != null;
-    }
-
-    public bool IsGuardOnCooldown()
-    {
-        return isGuardOnCooldown;
-    }
-
-    public float GetGuardCooldownRemaining()
-    {
-        return isGuardOnCooldown ? guardCooldownTimer : 0f;
-    }
-
-    public bool IsDashing()
-    {
-        return isDashing;
-    }
-
-    public PlayerHealthSystem GetHealthSystem()
-    {
-        return healthSystem;
-    }
+    // Public accessors
+    public bool IsGuardActive() => activeGuard != null;
+    public bool IsGuardOnCooldown() => isGuardOnCooldown;
+    public float GetGuardCooldownRemaining() => isGuardOnCooldown ? guardCooldownTimer : 0f;
+    public bool IsDashing() => isRegularDashing;
+    public bool IsDashSlashing() => isDashSlashing;
+    public PlayerHealthSystem GetHealthSystem() => healthSystem;
 
     // Debug visualization
     void OnDrawGizmosSelected()
     {
-        // Draw attack range
-        if (attackPoint != null)
+        // Dash slash visualization
+        if (isDashSlashing)
         {
             Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(attackPoint.position, slashRange);
+            Gizmos.DrawWireCube(transform.position, new Vector3(slashWidth, slashWidth, 0));
+            Gizmos.DrawLine(dashStartPosition, dashTargetPosition);
+        }
+        else
+        {
+            Vector3 dashDir = aimDirection.magnitude > 0.1f ? (Vector3)aimDirection : Vector3.right;
+            Vector3 dashEnd = transform.position + dashDir.normalized * dashDistance;
+
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawLine(transform.position, dashEnd);
+            Gizmos.DrawWireCube(transform.position, new Vector3(slashWidth, slashWidth, 0));
         }
 
-        // Draw guard spawn point
+        // Guard visualization
         if (guardSpawnPoint != null)
         {
             Gizmos.color = Color.blue;
             Gizmos.DrawWireCube(guardSpawnPoint.position, Vector3.one * 0.3f);
         }
 
-        // Draw health status
-        if (healthSystem != null)
+        // Cooldown indicators
+        if (isGuardOnCooldown)
         {
-            if (!healthSystem.IsAlive)
-            {
-                Gizmos.color = Color.red;
-                Gizmos.DrawWireSphere(transform.position, 2f);
-            }
-            else if (healthSystem.IsInvulnerable)
-            {
-                Gizmos.color = Color.yellow;
-                Gizmos.DrawWireSphere(transform.position, 1.5f);
-            }
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireCube(transform.position + Vector3.up * 2f, Vector3.one * 0.5f);
+        }
+
+        if (Time.time < lastDashSlashTime + dashCooldown)
+        {
+            Gizmos.color = Color.magenta;
+            Gizmos.DrawWireCube(transform.position + Vector3.up * 2.5f, Vector3.one * 0.3f);
         }
     }
 }

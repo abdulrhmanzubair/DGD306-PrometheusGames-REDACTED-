@@ -85,7 +85,7 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: 1
+    filterMode: 0
     aniso: 1
     mipBias: 0
     wrapU: 1
@@ -123,7 +123,7 @@ TextureImporter:
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 1
+    textureCompression: 0
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -177,10 +177,10 @@ TextureImporter:
       name: intruder alert_0
       rect:
         serializedVersion: 2
-        x: 53
-        y: 209
-        width: 48
-        height: 35
+        x: 51
+        y: 211
+        width: 402
+        height: 31
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -199,10 +199,10 @@ TextureImporter:
       name: intruder alert_1
       rect:
         serializedVersion: 2
-        x: 100
-        y: 218
-        width: 20
-        height: 19
+        x: 52
+        y: 167
+        width: 403
+        height: 34
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -221,10 +221,10 @@ TextureImporter:
       name: intruder alert_2
       rect:
         serializedVersion: 2
-        x: 119
-        y: 218
-        width: 21
-        height: 23
+        x: 51
+        y: 126
+        width: 405
+        height: 33
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -243,10 +243,10 @@ TextureImporter:
       name: intruder alert_3
       rect:
         serializedVersion: 2
-        x: 139
-        y: 218
-        width: 20
-        height: 19
+        x: 53
+        y: 89
+        width: 402
+        height: 35
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -265,10 +265,10 @@ TextureImporter:
       name: intruder alert_4
       rect:
         serializedVersion: 2
-        x: 158
-        y: 209
-        width: 202
-        height: 37
+        x: 53
+        y: 49
+        width: 402
+        height: 35
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -287,10 +287,10 @@ TextureImporter:
       name: intruder alert_5
       rect:
         serializedVersion: 2
-        x: 359
-        y: 218
-        width: 40
-        height: 23
+        x: 53
+        y: 5
+        width: 403
+        height: 35
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -305,253 +305,11 @@ TextureImporter:
       indices: 
       edges: []
       weights: []
-    - serializedVersion: 2
-      name: intruder alert_6
-      rect:
-        serializedVersion: 2
-        x: 398
-        y: 218
-        width: 20
-        height: 19
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 3acba6c5b61619e50800000000000000
-      internalID: 6814334824928165027
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: intruder alert_7
-      rect:
-        serializedVersion: 2
-        x: 414
-        y: 209
-        width: 42
-        height: 35
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 2a71e5b8ce6b20f90800000000000000
-      internalID: -6988822544658851934
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: intruder alert_8
-      rect:
-        serializedVersion: 2
-        x: 53
-        y: 167
-        width: 48
-        height: 35
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 681c86462fcbbbf40800000000000000
-      internalID: 5745393498893894022
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: intruder alert_9
-      rect:
-        serializedVersion: 2
-        x: 100
-        y: 176
-        width: 20
-        height: 19
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 4beb3b839247741f0800000000000000
-      internalID: -1060751466828677452
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: intruder alert_10
-      rect:
-        serializedVersion: 2
-        x: 119
-        y: 167
-        width: 337
-        height: 38
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 883bf20c5517cde30800000000000000
-      internalID: 4529619938338386824
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: intruder alert_11
-      rect:
-        serializedVersion: 2
-        x: 53
-        y: 125
-        width: 68
-        height: 35
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 8c9776a3b51cd08e0800000000000000
-      internalID: -1725510484646987320
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: intruder alert_12
-      rect:
-        serializedVersion: 2
-        x: 53
-        y: 90
-        width: 49
-        height: 35
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 96c0d907d0db644d0800000000000000
-      internalID: -3150623023877518231
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: intruder alert_13
-      rect:
-        serializedVersion: 2
-        x: 118
-        y: 89
-        width: 338
-        height: 73
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: d81de05bf376d5240800000000000000
-      internalID: 4782091902655582605
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: intruder alert_14
-      rect:
-        serializedVersion: 2
-        x: 100
-        y: 99
-        width: 20
-        height: 19
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 72f0a88df86655dc0800000000000000
-      internalID: -3650899154914635993
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: intruder alert_15
-      rect:
-        serializedVersion: 2
-        x: 53
-        y: 48
-        width: 403
-        height: 39
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: e676b329365e01640800000000000000
-      internalID: 5048787398100215662
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: intruder alert_16
-      rect:
-        serializedVersion: 2
-        x: 53
-        y: 4
-        width: 403
-        height: 41
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: fbce8f5c2ea087e30800000000000000
-      internalID: 4501359796657122495
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
     outline: []
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 587ec98057a4734459d94c3aa795ddfa
     internalID: 0
     vertices: []
     indices: 

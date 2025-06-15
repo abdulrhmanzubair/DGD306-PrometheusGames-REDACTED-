@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
-/// Enhanced slash effect with better damage detection and visual feedback
+/// Enhanced slash effect with better damage detection and visual feedback - FIXED VERSION
 /// </summary>
 public class EnhancedSlashEffect : MonoBehaviour
 {
@@ -45,6 +45,8 @@ public class EnhancedSlashEffect : MonoBehaviour
 
     void Initialize()
     {
+        Debug.Log($"EnhancedSlashEffect initialized with {damage} damage, radius {damageRadius}");
+
         animator = GetComponent<Animator>();
 
         // Set up audio
@@ -72,8 +74,8 @@ public class EnhancedSlashEffect : MonoBehaviour
             Destroy(trail, lifetime + 0.5f);
         }
 
-        // Schedule damage dealing (slight delay for animation timing)
-        Invoke(nameof(DealDamage), 0.1f);
+        // FIX: Deal damage immediately instead of waiting
+        DealDamage();
 
         // Destroy after lifetime
         Destroy(gameObject, lifetime);
@@ -81,8 +83,14 @@ public class EnhancedSlashEffect : MonoBehaviour
 
     void DealDamage()
     {
-        if (hasDealtDamage) return;
+        if (hasDealtDamage)
+        {
+            Debug.Log("Damage already dealt, skipping");
+            return;
+        }
+
         hasDealtDamage = true;
+        Debug.Log("Dealing slash damage...");
 
         if (useRadiusDamage)
         {
@@ -92,18 +100,32 @@ public class EnhancedSlashEffect : MonoBehaviour
 
     void DealRadiusDamage()
     {
+        Debug.Log($"Checking for targets in radius {damageRadius} at position {transform.position}");
+
         // Get all colliders in damage radius
         Collider2D[] hitColliders = Physics2D.OverlapCircleAll(transform.position, damageRadius, targetLayers);
+
+        Debug.Log($"Found {hitColliders.Length} colliders in damage radius");
 
         int enemiesHit = 0;
 
         foreach (Collider2D hitCollider in hitColliders)
         {
+            Debug.Log($"Checking collider: {hitCollider.name}, tag: {hitCollider.tag}");
+
             // Check if target has valid tag
-            if (!HasValidTag(hitCollider.gameObject)) continue;
+            if (!HasValidTag(hitCollider.gameObject))
+            {
+                Debug.Log($"Skipping {hitCollider.name} - invalid tag");
+                continue;
+            }
 
             // Prevent hitting the same target multiple times
-            if (hitTargets.Contains(hitCollider.gameObject)) continue;
+            if (hitTargets.Contains(hitCollider.gameObject))
+            {
+                Debug.Log($"Skipping {hitCollider.name} - already hit");
+                continue;
+            }
 
             // Add to hit targets
             hitTargets.Add(hitCollider.gameObject);
@@ -129,8 +151,29 @@ public class EnhancedSlashEffect : MonoBehaviour
                 // Screen shake for each hit
                 if (useScreenShake)
                 {
-                    // You can implement screen shake here or call a screen shake manager
                     Debug.Log($"Screen shake: {screenShakeIntensity} for {screenShakeDuration}s");
+                }
+            }
+            else
+            {
+                // FIX: Try alternative damage methods
+                Debug.LogWarning($"No IDamageable on {hitCollider.name}, trying alternative damage methods...");
+
+                // Try UniversalEnemyHealth
+                UniversalEnemyHealth enemyHealth = hitCollider.GetComponent<UniversalEnemyHealth>();
+                if (enemyHealth != null)
+                {
+                    enemyHealth.TakeDamage(damage);
+                    enemiesHit++;
+                    Debug.Log($"Used UniversalEnemyHealth to damage {hitCollider.name} for {damage}!");
+
+                    ApplyKnockback(hitCollider);
+                    SpawnHitEffect(hitCollider.transform.position);
+                    PlayHitSound();
+                }
+                else
+                {
+                    Debug.LogWarning($"No damage component found on {hitCollider.name}!");
                 }
             }
         }
@@ -139,7 +182,10 @@ public class EnhancedSlashEffect : MonoBehaviour
         if (enemiesHit > 1)
         {
             Debug.Log($"Multi-hit! Struck {enemiesHit} enemies!");
-            // Could add combo effects, extra damage, etc.
+        }
+        else if (enemiesHit == 0)
+        {
+            Debug.LogWarning("Slash attack hit no enemies!");
         }
 
         // If we hit something, play particles
@@ -158,6 +204,7 @@ public class EnhancedSlashEffect : MonoBehaviour
                 return true;
             }
         }
+        Debug.Log($"Target {target.name} has tag '{target.tag}' which is not in valid tags: [{string.Join(", ", targetTags)}]");
         return false;
     }
 
@@ -213,10 +260,17 @@ public class EnhancedSlashEffect : MonoBehaviour
     // Handle trigger-based damage (fallback)
     void OnTriggerEnter2D(Collider2D other)
     {
+        Debug.Log($"Slash effect triggered by: {other.name} (tag: {other.tag})");
+
         if (!useRadiusDamage && HasValidTag(other.gameObject))
         {
             // Prevent hitting the same target multiple times
-            if (hitTargets.Contains(other.gameObject)) return;
+            if (hitTargets.Contains(other.gameObject))
+            {
+                Debug.Log($"Already hit {other.name}, skipping");
+                return;
+            }
+
             hitTargets.Add(other.gameObject);
 
             IDamageable damageable = other.GetComponent<IDamageable>();
@@ -228,6 +282,24 @@ public class EnhancedSlashEffect : MonoBehaviour
                 ApplyKnockback(other);
                 SpawnHitEffect(other.transform.position);
                 PlayHitSound();
+            }
+            else
+            {
+                // Try UniversalEnemyHealth as fallback
+                UniversalEnemyHealth enemyHealth = other.GetComponent<UniversalEnemyHealth>();
+                if (enemyHealth != null)
+                {
+                    enemyHealth.TakeDamage(damage);
+                    Debug.Log($"Trigger slash used UniversalEnemyHealth on {other.name} for {damage} damage!");
+
+                    ApplyKnockback(other);
+                    SpawnHitEffect(other.transform.position);
+                    PlayHitSound();
+                }
+                else
+                {
+                    Debug.LogWarning($"No damage component found on triggered object {other.name}!");
+                }
             }
         }
     }
@@ -242,12 +314,24 @@ public class EnhancedSlashEffect : MonoBehaviour
         // Draw slash direction
         Gizmos.color = Color.yellow;
         Gizmos.DrawRay(transform.position, transform.right * damageRadius);
+
+        // Draw target layer info
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawWireCube(transform.position + Vector3.up * 2f, Vector3.one * 0.3f);
+    }
+
+    void OnDrawGizmos()
+    {
+        // Always draw damage radius for debugging
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, damageRadius);
     }
 
     // Public methods for external control
     public void SetDamage(float newDamage)
     {
         damage = newDamage;
+        Debug.Log($"Slash effect damage set to {damage}");
     }
 
     public void SetKnockback(float newKnockback)
@@ -262,5 +346,13 @@ public class EnhancedSlashEffect : MonoBehaviour
         targetTags.CopyTo(newTags, 0);
         newTags[targetTags.Length] = tag;
         targetTags = newTags;
+
+        Debug.Log($"Added target tag: {tag}. Current tags: [{string.Join(", ", targetTags)}]");
+    }
+
+    public void SetTargetLayers(LayerMask layers)
+    {
+        targetLayers = layers;
+        Debug.Log($"Slash effect target layers set to: {targetLayers.value}");
     }
 }
