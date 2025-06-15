@@ -24,9 +24,12 @@ public class SimplifiedCharacterSelection : MonoBehaviour
     private PlayerState player1State = new PlayerState();
     private PlayerState player2State = new PlayerState();
 
-
     private string player1InputMethod = "none";
     private string player2InputMethod = "none";
+
+    // Get selected player count from PlayerCountSelector
+    private int selectedPlayerCount = 1;
+
     // Static data to pass to gameplay scene
     public static Dictionary<int, CharacterType> SelectedCharacters { get; private set; } = new Dictionary<int, CharacterType>();
 
@@ -45,9 +48,23 @@ public class SimplifiedCharacterSelection : MonoBehaviour
 
     private void Start()
     {
+        // Get the selected player count from PlayerCountSelector
+        selectedPlayerCount = PlayerCountSelector.GetSelectedPlayerCount();
+        Debug.Log($"Character Selection started for {selectedPlayerCount} player(s)");
+
         // Setup player states
         SetupPlayerState(player1State, player1SelectionUI, 0);
         SetupPlayerState(player2State, player2SelectionUI, 1);
+
+        // Hide Player 2 UI if solo play is selected
+        if (selectedPlayerCount == 1)
+        {
+            if (player2SelectionUI != null)
+            {
+                player2SelectionUI.gameObject.SetActive(false);
+            }
+            Debug.Log("Solo play selected - Player 2 UI hidden");
+        }
 
         if (readyPrompt != null)
             readyPrompt.SetActive(false);
@@ -63,8 +80,15 @@ public class SimplifiedCharacterSelection : MonoBehaviour
             Debug.Log($"  Gamepad {i}: {Gamepad.all[i].name}");
         }
         Debug.Log("CONTROLS:");
-        Debug.Log("  Player 1: SPACE (keyboard) or A button (Gamepad 1)");
-        Debug.Log("  Player 2: ENTER (keyboard) or A button (Gamepad 2)");
+        if (selectedPlayerCount == 1)
+        {
+            Debug.Log("  Player 1: SPACE (keyboard) or A button (Gamepad)");
+        }
+        else
+        {
+            Debug.Log("  Player 1: SPACE (keyboard) or A button (Gamepad 1)");
+            Debug.Log("  Player 2: ENTER (keyboard) or A button (Gamepad 2)");
+        }
     }
 
     private void SetupPlayerState(PlayerState state, Transform uiRoot, int playerIndex)
@@ -91,15 +115,21 @@ public class SimplifiedCharacterSelection : MonoBehaviour
     private void Update()
     {
         HandlePlayer1Input();
-        HandlePlayer2Input();
+
+        // Only handle Player 2 input if duo play is selected
+        if (selectedPlayerCount > 1)
+        {
+            HandlePlayer2Input();
+        }
+
         CheckReadyState();
 
         // TEMPORARY TEST - Remove this later!
         if (Keyboard.current != null && Keyboard.current.tKey.wasPressedThisFrame)
         {
-            Debug.Log("MANUAL TEST - Forcing both players ready...");
+            Debug.Log("MANUAL TEST - Forcing players ready based on selected count...");
 
-            // Force both players to join and be ready
+            // Force Player 1
             if (!player1State.isJoined)
             {
                 JoinPlayer(player1State, 0);
@@ -108,15 +138,19 @@ public class SimplifiedCharacterSelection : MonoBehaviour
             player1State.isReady = true;
             UpdatePlayerUI(player1State, 0);
 
-            if (!player2State.isJoined)
+            // Only force Player 2 if duo play is selected
+            if (selectedPlayerCount > 1)
             {
-                JoinPlayer(player2State, 1);
+                if (!player2State.isJoined)
+                {
+                    JoinPlayer(player2State, 1);
+                }
+                player2State.selectedCharacterIndex = 1; // Melee
+                player2State.isReady = true;
+                UpdatePlayerUI(player2State, 1);
             }
-            player2State.selectedCharacterIndex = 1; // Melee
-            player2State.isReady = true;
-            UpdatePlayerUI(player2State, 1);
 
-            Debug.Log("Both players forced ready - should start game now");
+            Debug.Log($"Forced {selectedPlayerCount} player(s) ready - should start game now");
         }
     }
 
@@ -206,16 +240,17 @@ public class SimplifiedCharacterSelection : MonoBehaviour
 
     private void HandlePlayer2Input()
     {
-        if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
+        if (Keyboard.current != null && Keyboard.current.enterKey.wasPressedThisFrame)
         {
             player2InputMethod = "keyboard";
-            JoinPlayer(player2State, 0);
+            JoinPlayer(player2State, 1);
         }
-        else if (Gamepad.all.Count > 0 && Gamepad.all[0].buttonSouth.wasPressedThisFrame)
+        else if (Gamepad.all.Count > 1 && Gamepad.all[1].buttonSouth.wasPressedThisFrame)
         {
             player2InputMethod = "gamepad";
-            JoinPlayer(player2State, 0);
+            JoinPlayer(player2State, 1);
         }
+
         if (!player2State.isJoined)
         {
             // Player 2 joins with ENTER or SECOND GAMEPAD (index 1)
@@ -405,24 +440,45 @@ public class SimplifiedCharacterSelection : MonoBehaviour
 
     private void CheckReadyState()
     {
-        // Need at least one player joined
-        if (!player1State.isJoined && !player2State.isJoined)
+        // For solo play, only check Player 1
+        if (selectedPlayerCount == 1)
         {
-            if (readyPrompt != null) readyPrompt.SetActive(false);
-            return;
+            if (!player1State.isJoined)
+            {
+                if (readyPrompt != null) readyPrompt.SetActive(false);
+                return;
+            }
+
+            bool allReady = player1State.isReady;
+            if (readyPrompt != null)
+                readyPrompt.SetActive(allReady);
+
+            if (allReady)
+            {
+                StartCoroutine(StartGameCountdown());
+            }
         }
-
-        // Check if all joined players are ready
-        bool allReady = true;
-        if (player1State.isJoined && !player1State.isReady) allReady = false;
-        if (player2State.isJoined && !player2State.isReady) allReady = false;
-
-        if (readyPrompt != null)
-            readyPrompt.SetActive(allReady);
-
-        if (allReady)
+        else
         {
-            StartCoroutine(StartGameCountdown());
+            // For duo play, need at least one player joined
+            if (!player1State.isJoined && !player2State.isJoined)
+            {
+                if (readyPrompt != null) readyPrompt.SetActive(false);
+                return;
+            }
+
+            // Check if all joined players are ready
+            bool allReady = true;
+            if (player1State.isJoined && !player1State.isReady) allReady = false;
+            if (player2State.isJoined && !player2State.isReady) allReady = false;
+
+            if (readyPrompt != null)
+                readyPrompt.SetActive(allReady);
+
+            if (allReady)
+            {
+                StartCoroutine(StartGameCountdown());
+            }
         }
     }
 
@@ -430,10 +486,18 @@ public class SimplifiedCharacterSelection : MonoBehaviour
     {
         yield return new WaitForSeconds(1.5f);
 
-        // Double-check still ready
+        // Double-check still ready based on selected player count
         bool stillReady = true;
-        if (player1State.isJoined && !player1State.isReady) stillReady = false;
-        if (player2State.isJoined && !player2State.isReady) stillReady = false;
+
+        if (selectedPlayerCount == 1)
+        {
+            if (player1State.isJoined && !player1State.isReady) stillReady = false;
+        }
+        else
+        {
+            if (player1State.isJoined && !player1State.isReady) stillReady = false;
+            if (player2State.isJoined && !player2State.isReady) stillReady = false;
+        }
 
         if (stillReady)
         {
@@ -443,7 +507,6 @@ public class SimplifiedCharacterSelection : MonoBehaviour
 
     private void StartGame()
     {
-
         PlayerPrefs.SetString("Player0InputMethod", player1InputMethod);
         PlayerPrefs.SetString("Player1InputMethod", player2InputMethod);
         Debug.Log("=== STARTING GAME ===");
@@ -457,7 +520,8 @@ public class SimplifiedCharacterSelection : MonoBehaviour
             Debug.Log($"STORED: Player 1 = {availableCharacters[player1State.selectedCharacterIndex].name} ({availableCharacters[player1State.selectedCharacterIndex].type})");
         }
 
-        if (player2State.isJoined && player2State.isReady)
+        // Only store Player 2 if duo play is selected and Player 2 is ready
+        if (selectedPlayerCount > 1 && player2State.isJoined && player2State.isReady)
         {
             SelectedCharacters[1] = availableCharacters[player2State.selectedCharacterIndex].type;
             Debug.Log($"STORED: Player 2 = {availableCharacters[player2State.selectedCharacterIndex].name} ({availableCharacters[player2State.selectedCharacterIndex].type})");
@@ -471,6 +535,7 @@ public class SimplifiedCharacterSelection : MonoBehaviour
 
         // BACKUP: Store in PlayerPrefs as fallback
         PlayerPrefs.SetInt("PlayerCount", SelectedCharacters.Count);
+        PlayerPrefs.SetInt("SelectedPlayerCount", selectedPlayerCount); // Store the original choice
         Debug.Log($"BACKUP: Stored PlayerCount = {SelectedCharacters.Count}");
 
         foreach (var kvp in SelectedCharacters)

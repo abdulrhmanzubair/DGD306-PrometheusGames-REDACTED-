@@ -12,6 +12,7 @@ TagManager:
   - Boundary
   - Background
   - Projectiles
+  - Checkpoint
   layers:
   - Default
   - TransparentFX
