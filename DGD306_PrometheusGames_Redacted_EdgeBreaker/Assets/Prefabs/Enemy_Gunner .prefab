@@ -127,9 +127,9 @@ GameObject:
   - component: {fileID: 4440445852997806918}
   - component: {fileID: 1045581334063107790}
   - component: {fileID: 4669299699786710098}
-  - component: {fileID: 1779912860591936182}
   - component: {fileID: 6893010640494526051}
   - component: {fileID: 8676658494272626383}
+  - component: {fileID: 3652845813157774381}
   m_Layer: 6
   m_Name: 'Enemy_Gunner '
   m_TagString: Enemy
@@ -283,19 +283,6 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 2.5731373, y: 4.68451}
   m_EdgeRadius: 0
---- !u!114 &1779912860591936182
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7513631840646849850}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7c0f9d67987ff29429c04648c545076c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  health: 10
 --- !u!114 &6893010640494526051
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -310,17 +297,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rb: {fileID: 1045581334063107790}
   spriteRenderer: {fileID: 4440445852997806918}
-  moveSpeed: 15
-  stopDistance: 40
-  detectionRadius: 50
+  moveSpeed: 8
+  stopDistance: 13
+  detectionRadius: 15.8
   bulletPrefab: {fileID: 3092579064342640799, guid: 9d2d037367c4a914096d79d70a8a8ba2, type: 3}
   firePoint: {fileID: 2247163288898578554}
   shootCooldown: 0.8
   bulletSpeed: 25
   health: 100
+  maxHealth: 100
   scoreValue: 50
+  shootSound: {fileID: 8300000, guid: f17da19450c347a4e95db4530f935606, type: 3}
+  hurtSound: {fileID: 8300000, guid: baa74edcbb399334a9cf0ef8f8197f7e, type: 3}
+  deathSound: {fileID: 8300000, guid: 8a2f8b6fdefdcbf47899e618245506b9, type: 3}
+  detectSound: {fileID: 8300000, guid: ce31524e15341be4b8b1aa24a304d719, type: 3}
+  footstepSounds: []
+  shootVolume: 0.6
+  hurtVolume: 0.761
+  deathVolume: 0.74
+  detectVolume: 0.348
+  footstepVolume: 0.3
+  footstepInterval: 0.5
   deathSpritePrefab: {fileID: 7200185586053467219, guid: 73e002f4848f73341a6ed1ed6424abea, type: 3}
-  deathSpriteLifetime: 1
+  deathSpriteLifetime: 0.3
 --- !u!95 &8676658494272626383
 Animator:
   serializedVersion: 7
@@ -343,6 +342,50 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &3652845813157774381
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7513631840646849850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0742d3b29382df54199f168f10295d15, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHealth: 100
+  currentHealth: 0
+  scoreValue: 50
+  canTakeDamage: 1
+  enemyType: 0
+  enemyName: Enemy
+  healthUICanvas: {fileID: 0}
+  healthBar: {fileID: 0}
+  healthText: {fileID: 0}
+  healthBarFill: {fileID: 0}
+  healthyColor: {r: 0, g: 1, b: 0, a: 1}
+  damagedColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  criticalColor: {r: 1, g: 0, b: 0, a: 1}
+  healthBarOffset: {x: 0, y: 1.5, z: 0}
+  showHealthBar: 1
+  hideWhenFullHealth: 0
+  enemySprite: {fileID: 0}
+  damageFlashColor: {r: 1, g: 0, b: 0, a: 1}
+  flashDuration: 0.1
+  damageTextPrefab: {fileID: 0}
+  damageTextSpawnPoint: {fileID: 0}
+  hurtSounds: []
+  deathSounds: []
+  hurtVolume: 0.7
+  deathVolume: 0.8
+  deathEffectPrefab: {fileID: 0}
+  deathEffectLifetime: 2
+  dropItems: 0
+  possibleDrops: []
+  dropChance: 0.3
+  canBeKnockedBack: 1
+  knockbackResistance: 1
 --- !u!1 &8618708968694623104
 GameObject:
   m_ObjectHideFlags: 0

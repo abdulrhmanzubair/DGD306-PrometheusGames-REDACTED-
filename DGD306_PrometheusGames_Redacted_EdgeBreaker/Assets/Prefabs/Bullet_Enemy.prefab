@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 477013269318214413}
   - component: {fileID: 5999253773341266200}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Light 2D
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -98,9 +98,9 @@ GameObject:
   - component: {fileID: 661206519874347414}
   - component: {fileID: -957760310780712008}
   - component: {fileID: 2534926644226548403}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Bullet_Enemy
-  m_TagString: Untagged
+  m_TagString: Projectiles
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -229,6 +229,10 @@ MonoBehaviour:
   lifetime: 3
   lifeStages: []
   hitEffectPrefab: {fileID: 1780990898665742232, guid: 29c53dc7e4c4c1146a94da7322a4587b, type: 3}
+  shootSound: {fileID: 8300000, guid: 4310474905e266640852f43bd609a1a4, type: 3}
+  hitSound: {fileID: 8300000, guid: af66162561d2eed40ad49268cab318bb, type: 3}
+  shootVolume: 1
+  hitVolume: 0.447
   shooterTag: Enemy
 --- !u!95 &-957760310780712008
 Animator:

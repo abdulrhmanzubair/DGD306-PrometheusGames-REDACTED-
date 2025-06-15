@@ -24,6 +24,9 @@ public class SimplifiedCharacterSelection : MonoBehaviour
     private PlayerState player1State = new PlayerState();
     private PlayerState player2State = new PlayerState();
 
+
+    private string player1InputMethod = "none";
+    private string player2InputMethod = "none";
     // Static data to pass to gameplay scene
     public static Dictionary<int, CharacterType> SelectedCharacters { get; private set; } = new Dictionary<int, CharacterType>();
 
@@ -119,6 +122,17 @@ public class SimplifiedCharacterSelection : MonoBehaviour
 
     private void HandlePlayer1Input()
     {
+        if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
+        {
+            player1InputMethod = "keyboard";
+            JoinPlayer(player1State, 0);
+        }
+        else if (Gamepad.all.Count > 0 && Gamepad.all[0].buttonSouth.wasPressedThisFrame)
+        {
+            player1InputMethod = "gamepad";
+            JoinPlayer(player1State, 0);
+        }
+
         if (!player1State.isJoined)
         {
             // Player 1 joins with SPACE or FIRST GAMEPAD (index 0)
@@ -192,6 +206,16 @@ public class SimplifiedCharacterSelection : MonoBehaviour
 
     private void HandlePlayer2Input()
     {
+        if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
+        {
+            player2InputMethod = "keyboard";
+            JoinPlayer(player2State, 0);
+        }
+        else if (Gamepad.all.Count > 0 && Gamepad.all[0].buttonSouth.wasPressedThisFrame)
+        {
+            player2InputMethod = "gamepad";
+            JoinPlayer(player2State, 0);
+        }
         if (!player2State.isJoined)
         {
             // Player 2 joins with ENTER or SECOND GAMEPAD (index 1)
@@ -419,6 +443,9 @@ public class SimplifiedCharacterSelection : MonoBehaviour
 
     private void StartGame()
     {
+
+        PlayerPrefs.SetString("Player0InputMethod", player1InputMethod);
+        PlayerPrefs.SetString("Player1InputMethod", player2InputMethod);
         Debug.Log("=== STARTING GAME ===");
 
         // Store selected characters
