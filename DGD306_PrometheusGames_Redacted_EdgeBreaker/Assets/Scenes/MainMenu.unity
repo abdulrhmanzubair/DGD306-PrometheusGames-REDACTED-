@@ -155,7 +155,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: -265, y: -85}
+  m_AnchoredPosition: {x: -135.42017, y: -197.23248}
   m_SizeDelta: {x: 320.6683, y: 30}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &120336951
@@ -303,14 +303,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0.8235294}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -669774613729423382, guid: 9d33840642b606a4da51172eb4a63133, type: 3}
+  m_Sprite: {fileID: -1553214442974607870, guid: 88b35d55fc6b67c4ab79434cdcce112c, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -866,7 +866,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: -266.57983, y: 149.23247}
+  m_AnchoredPosition: {x: -137, y: 37}
   m_SizeDelta: {x: 320.67, y: 30}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &945265739
@@ -1169,7 +1169,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1383565058}
-  - component: {fileID: 1383565057}
   - component: {fileID: 1383565056}
   m_Layer: 0
   m_Name: InputManager
@@ -1208,29 +1207,6 @@ MonoBehaviour:
   m_DefaultActionMap: Player
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
---- !u!114 &1383565057
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1383565055}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 815a21fe526dcb343a30aee61422714a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  <MenuOpenCloseInput>k__BackingField: 0
-  _playerInput: {fileID: 0}
-  _menuOpenCloseAction:
-    m_Name: 
-    m_Type: 0
-    m_ExpectedControlType: 
-    m_Id: ca09ad27-75a3-4639-92cf-c3d73e7af4cf
-    m_Processors: 
-    m_Interactions: 
-    m_SingletonActionBindings: []
-    m_Flags: 0
 --- !u!4 &1383565058
 Transform:
   m_ObjectHideFlags: 0
@@ -1282,7 +1258,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: -185.57983, y: 79.63247}
+  m_AnchoredPosition: {x: -56, y: -32.600014}
   m_SizeDelta: {x: 160, y: 30}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &1417408062
@@ -1438,7 +1414,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: -185.77983, y: 9.432468}
+  m_AnchoredPosition: {x: -56.199997, y: -102.80002}
   m_SizeDelta: {x: 160, y: 30}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &1525136530
