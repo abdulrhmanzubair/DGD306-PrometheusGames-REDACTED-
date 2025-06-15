@@ -308,9 +308,9 @@ public class UniversalEnemyHealth : MonoBehaviour, IDamageable
         OnEnemyDeath?.Invoke(this);
 
         // Add score
-        if (ScoreManager.Instance != null)
+        if (ScoreManagerV2.instance != null)
         {
-            ScoreManager.Instance.AddScore(scoreValue);
+            ScoreManagerV2.instance.AddPoints(scoreValue);
         }
 
         // Stop movement

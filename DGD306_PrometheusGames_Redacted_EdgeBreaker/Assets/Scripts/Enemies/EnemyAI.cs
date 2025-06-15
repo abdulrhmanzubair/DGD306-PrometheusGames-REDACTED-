@@ -244,9 +244,9 @@ public class EnemyAI : MonoBehaviour, IDamageable
         OnEnemyDeath?.Invoke();
 
         // Add score
-        if (ScoreManager.Instance != null)
+        if (ScoreManagerV2.instance != null)
         {
-            ScoreManager.Instance.AddScore(scoreValue);
+            ScoreManagerV2.instance.AddPoints(scoreValue);
             Debug.Log($"Added {scoreValue} points for killing {gameObject.name}");
         }
 

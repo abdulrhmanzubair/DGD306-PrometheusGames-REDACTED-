@@ -17,6 +17,7 @@ public class Enemy : MonoBehaviour, IDamageable
 
     void Die()
     {
+        ScoreManagerV2.instance.AddPoint();
         // Play death animation, etc.
         Destroy(gameObject);
     }

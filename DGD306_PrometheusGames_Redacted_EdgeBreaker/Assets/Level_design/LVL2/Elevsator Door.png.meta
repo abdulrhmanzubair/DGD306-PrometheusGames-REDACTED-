@@ -160,7 +160,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      Elevsator Door_0: 973094452963078753
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -2,8 +2,8 @@ using UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
-/// Enhanced LevelExitTrigger with score system integration
-/// Replaces your existing LevelExitTrigger
+/// Enhanced LevelExitTrigger with ScoreManagerV2 integration
+/// Updated to work with the new timer-based scoring system
 /// </summary>
 public class LevelExitTrigger : MonoBehaviour
 {
@@ -20,11 +20,11 @@ public class LevelExitTrigger : MonoBehaviour
     [Header("Score Integration")]
     [Tooltip("Bonus points for completing the level")]
     public int levelCompletionBonus = 500;
-    [Tooltip("Award bonus based on remaining time")]
-    public bool timeBonus = false;
-    [Tooltip("Points per second remaining (if timeBonus is true)")]
+    [Tooltip("Award bonus based on remaining time (handled by ScoreManagerV2)")]
+    public bool timeBonus = true;
+    [Tooltip("Points per second remaining (if timeBonus is true) - DEPRECATED: Use ScoreManagerV2 settings")]
     public int pointsPerSecond = 10;
-    [Tooltip("Level time limit for bonus calculation")]
+    [Tooltip("Level time limit for bonus calculation - DEPRECATED: Use ScoreManagerV2 settings")]
     public float levelTimeLimit = 300f; // 5 minutes
 
     [Header("Visual Feedback")]
@@ -83,10 +83,19 @@ public class LevelExitTrigger : MonoBehaviour
 
         DebugLog($"Level exit initialized. Required players: {requiredPlayerCount}");
 
-        // Notify ScoreManager of level start
-        if (ScoreManager.Instance != null)
+        // Notify ScoreManagerV2 of level start (updated for new system)
+        if (ScoreManagerV2.instance != null)
         {
-            ScoreManager.Instance.SetCurrentLevel(GetCurrentLevelNumber());
+            // Set timer settings if ScoreManagerV2 should use custom values
+            if (levelTimeLimit != 300f) // Only if different from default
+            {
+                ScoreManagerV2.instance.SetTimeLimit(levelTimeLimit);
+                DebugLog($"Set custom time limit: {levelTimeLimit} seconds");
+            }
+        }
+        else
+        {
+            DebugLog("Warning: ScoreManagerV2 not found! Make sure it exists in your first level.");
         }
     }
 
@@ -212,7 +221,7 @@ public class LevelExitTrigger : MonoBehaviour
         DebugLog("Level exit triggered!");
         OnAllPlayersReached?.Invoke();
 
-        // Calculate and award score bonuses
+        // Award level completion bonus FIRST
         AwardLevelCompletionScore();
 
         // Visual/Audio feedback
@@ -232,19 +241,18 @@ public class LevelExitTrigger : MonoBehaviour
             ShowExitMessage(exitMessage);
         }
 
-        // Notify ScoreManager of level completion
-        if (ScoreManager.Instance != null)
-        {
-            ScoreManager.Instance.OnLevelCompleted();
-        }
-
-        // Start transition after delay
-        StartCoroutine(ExitAfterDelay());
+        // Start the completion process with proper timing
+        StartCoroutine(CompleteAfterDelay());
     }
 
     void AwardLevelCompletionScore()
     {
-        if (ScoreManager.Instance == null) return;
+        // Updated to use ScoreManagerV2
+        if (ScoreManagerV2.instance == null)
+        {
+            DebugLog("Warning: ScoreManagerV2 not found! Cannot award completion bonus.");
+            return;
+        }
 
         int totalBonus = 0;
 
@@ -255,8 +263,8 @@ public class LevelExitTrigger : MonoBehaviour
             DebugLog($"Level completion bonus: {levelCompletionBonus} points");
         }
 
-        // Time bonus
-        if (timeBonus && pointsPerSecond > 0)
+        // Legacy time bonus calculation (only if ScoreManagerV2 doesn't handle it)
+        if (timeBonus && pointsPerSecond > 0 && !ScoreManagerV2.instance.useTimer)
         {
             float levelTime = Time.time - levelStartTime;
             float timeRemaining = Mathf.Max(0, levelTimeLimit - levelTime);
@@ -265,41 +273,113 @@ public class LevelExitTrigger : MonoBehaviour
             if (timeBonusPoints > 0)
             {
                 totalBonus += timeBonusPoints;
-                DebugLog($"Time bonus: {timeBonusPoints} points ({timeRemaining:F1}s remaining)");
+                DebugLog($"Legacy time bonus: {timeBonusPoints} points ({timeRemaining:F1}s remaining)");
             }
         }
+        else if (timeBonus && ScoreManagerV2.instance.useTimer)
+        {
+            DebugLog("Time bonus will be calculated by ScoreManagerV2 automatically");
+        }
 
-        // Award the total bonus
+        // Award the completion bonus (time bonus handled separately by ScoreManagerV2)
         if (totalBonus > 0)
         {
-            ScoreManager.Instance.AddScore(totalBonus);
-            DebugLog($"Total level bonus awarded: {totalBonus} points");
+            ScoreManagerV2.instance.AddPoints(totalBonus);
+            DebugLog($"Level completion bonus awarded: {totalBonus} points");
         }
     }
 
-    System.Collections.IEnumerator ExitAfterDelay()
+    System.Collections.IEnumerator CompleteAfterDelay()
     {
         yield return new WaitForSeconds(exitDelay);
 
         OnLevelComplete?.Invoke();
 
+        // Notify ScoreManagerV2 of level completion (WITHOUT automatic scene transition)
+        if (ScoreManagerV2.instance != null)
+        {
+            ScoreManagerV2.instance.OnLevelCompleteNoTransition();
+            DebugLog("Level completion sent to ScoreManagerV2 (no auto-transition)");
+
+            // Now handle scene transition based on OUR settings
+            yield return StartCoroutine(HandleSceneTransition());
+        }
+        else
+        {
+            DebugLog("ScoreManagerV2 not found! Using fallback level transition...");
+            // Fallback level transition
+            yield return StartCoroutine(FallbackExitAfterDelay());
+        }
+    }
+
+    System.Collections.IEnumerator HandleSceneTransition()
+    {
+        // Small delay to show completion effects
+        yield return new WaitForSeconds(0.5f);
+
+        DebugLog($"Handling scene transition - UseNextInBuildOrder: {useNextInBuildOrder}, NextSceneName: '{nextSceneName}'");
+
         // Check if this is the final level
         bool isFinalLevel = false;
-        if (ScoreManager.Instance != null)
-        {
-            isFinalLevel = ScoreManager.Instance.IsGameComplete();
-        }
+        int currentSceneIndex = UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex;
+        int nextSceneIndex = currentSceneIndex + 1;
 
-        if (isFinalLevel)
+        if (useNextInBuildOrder)
         {
-            DebugLog("Final level completed! Showing final score...");
-            // You can add special end-game logic here
-            // For now, we'll still transition to the next scene (could be credits/score screen)
-        }
+            isFinalLevel = nextSceneIndex >= UnityEngine.SceneManagement.SceneManager.sceneCountInBuildSettings;
 
-        // Trigger level transition
+            if (isFinalLevel)
+            {
+                DebugLog("Final level completed! No more levels in build order.");
+                yield break; // Exit without loading another scene
+            }
+
+            DebugLog($"Loading next scene by build index: {nextSceneIndex}");
+            UnityEngine.SceneManagement.SceneManager.LoadScene(nextSceneIndex);
+        }
+        else if (!string.IsNullOrEmpty(nextSceneName))
+        {
+            DebugLog($"Loading scene by name: '{nextSceneName}'");
+
+            // Check if scene exists in build settings
+            bool sceneExists = false;
+            for (int i = 0; i < UnityEngine.SceneManagement.SceneManager.sceneCountInBuildSettings; i++)
+            {
+                string scenePath = UnityEngine.SceneManagement.SceneUtility.GetScenePathByBuildIndex(i);
+                string sceneName = System.IO.Path.GetFileNameWithoutExtension(scenePath);
+                if (sceneName == nextSceneName)
+                {
+                    sceneExists = true;
+                    break;
+                }
+            }
+
+            if (sceneExists)
+            {
+                UnityEngine.SceneManagement.SceneManager.LoadScene(nextSceneName);
+            }
+            else
+            {
+                DebugLog($"ERROR: Scene '{nextSceneName}' not found in build settings! Check spelling and make sure it's added to build.");
+            }
+        }
+        else
+        {
+            DebugLog("No next scene specified! Set nextSceneName or enable useNextInBuildOrder.");
+        }
+    }
+
+    System.Collections.IEnumerator FallbackExitAfterDelay()
+    {
+        yield return new WaitForSeconds(1f);
+
+        DebugLog("Using fallback scene transition logic...");
+
+        // Use LevelTransitionManager if available
         if (LevelTransitionManager.Instance != null)
         {
+            DebugLog("LevelTransitionManager found, using it for transition");
+
             if (useNextInBuildOrder)
             {
                 LevelTransitionManager.Instance.TransitionToNextLevel();
@@ -315,29 +395,90 @@ public class LevelExitTrigger : MonoBehaviour
         }
         else
         {
-            DebugLog("LevelTransitionManager not found! Loading scene directly...");
+            DebugLog("LevelTransitionManager not found! Using direct scene loading...");
 
-            // Fallback to direct scene loading
+            // Direct scene loading with proper scene name support
             if (useNextInBuildOrder)
             {
-                int nextScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex + 1;
-                UnityEngine.SceneManagement.SceneManager.LoadScene(nextScene);
+                int currentSceneIndex = UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex;
+                int nextSceneIndex = currentSceneIndex + 1;
+
+                if (nextSceneIndex < UnityEngine.SceneManagement.SceneManager.sceneCountInBuildSettings)
+                {
+                    DebugLog($"Loading next scene by build index: {nextSceneIndex}");
+                    UnityEngine.SceneManagement.SceneManager.LoadScene(nextSceneIndex);
+                }
+                else
+                {
+                    DebugLog("No more scenes in build order!");
+                }
             }
             else if (!string.IsNullOrEmpty(nextSceneName))
             {
-                UnityEngine.SceneManagement.SceneManager.LoadScene(nextSceneName);
+                DebugLog($"Loading scene by name: '{nextSceneName}'");
+
+                // Check if scene exists in build settings
+                bool sceneExists = false;
+                for (int i = 0; i < UnityEngine.SceneManagement.SceneManager.sceneCountInBuildSettings; i++)
+                {
+                    string scenePath = UnityEngine.SceneManagement.SceneUtility.GetScenePathByBuildIndex(i);
+                    string sceneName = System.IO.Path.GetFileNameWithoutExtension(scenePath);
+                    if (sceneName == nextSceneName)
+                    {
+                        sceneExists = true;
+                        break;
+                    }
+                }
+
+                if (sceneExists)
+                {
+                    UnityEngine.SceneManagement.SceneManager.LoadScene(nextSceneName);
+                }
+                else
+                {
+                    DebugLog($"ERROR: Scene '{nextSceneName}' not found in build settings! Available scenes:");
+                    // List available scenes for debugging
+                    for (int i = 0; i < UnityEngine.SceneManagement.SceneManager.sceneCountInBuildSettings; i++)
+                    {
+                        string scenePath = UnityEngine.SceneManagement.SceneUtility.GetScenePathByBuildIndex(i);
+                        string sceneName = System.IO.Path.GetFileNameWithoutExtension(scenePath);
+                        DebugLog($"  Scene {i}: {sceneName}");
+                    }
+                }
+            }
+            else
+            {
+                DebugLog("No next scene specified! Set nextSceneName or enable useNextInBuildOrder.");
             }
         }
     }
 
     void ShowExitMessage(string message)
     {
-        // Enhanced message with score info
-        if (ScoreManager.Instance != null)
+        // Enhanced message with score info from ScoreManagerV2
+        if (ScoreManagerV2.instance != null)
         {
-            int currentScore = ScoreManager.Instance.GetScore();
-            int levelScore = ScoreManager.Instance.GetCurrentLevelScore();
-            message += $"\nLevel Score: {levelScore}\nTotal Score: {currentScore}";
+            int currentScore = ScoreManagerV2.instance.GetScore();
+            int levelScore = ScoreManagerV2.instance.GetCurrentLevelScore();
+            float timeRemaining = ScoreManagerV2.instance.TimeRemaining;
+            int potentialTimeBonus = ScoreManagerV2.instance.CalculateTimeBonus();
+
+            message += $"\nLevel Score: {levelScore}";
+            if (ScoreManagerV2.instance.useTimer)
+            {
+                message += $"\nTime Remaining: {timeRemaining:F1}s";
+                if (potentialTimeBonus > 0)
+                {
+                    message += $"\nTime Bonus: +{potentialTimeBonus} points!";
+                }
+            }
+            message += $"\nTotal Score: {currentScore}";
+
+            // Check if new high score
+            if (currentScore >= ScoreManagerV2.instance.GetHighscore())
+            {
+                message += "\nNEW HIGH SCORE!";
+            }
         }
 
         DebugLog($"EXIT MESSAGE: {message}");
@@ -379,6 +520,44 @@ public class LevelExitTrigger : MonoBehaviour
         return Time.time - levelStartTime;
     }
 
+    // New methods for ScoreManagerV2 integration
+    public float GetTimeRemaining()
+    {
+        if (ScoreManagerV2.instance != null && ScoreManagerV2.instance.useTimer)
+        {
+            return ScoreManagerV2.instance.TimeRemaining;
+        }
+        else
+        {
+            // Fallback calculation
+            float levelTime = Time.time - levelStartTime;
+            return Mathf.Max(0, levelTimeLimit - levelTime);
+        }
+    }
+
+    public int GetPotentialTimeBonus()
+    {
+        if (ScoreManagerV2.instance != null)
+        {
+            return ScoreManagerV2.instance.CalculateTimeBonus();
+        }
+        else
+        {
+            // Fallback calculation
+            float timeRemaining = GetTimeRemaining();
+            return Mathf.RoundToInt(timeRemaining * pointsPerSecond);
+        }
+    }
+
+    public bool IsTimerActive()
+    {
+        if (ScoreManagerV2.instance != null)
+        {
+            return ScoreManagerV2.instance.IsTimerRunning;
+        }
+        return false;
+    }
+
     void DebugLog(string message)
     {
         if (showDebugInfo)
@@ -408,7 +587,7 @@ public class LevelExitTrigger : MonoBehaviour
             }
         }
 
-        // Draw label
+        // Draw label with updated info
 #if UNITY_EDITOR
         Vector3 labelPos = transform.position + Vector3.up * 2f;
         string label = useNextInBuildOrder ? "Exit: Next Level" : $"Exit: {nextSceneName}";
@@ -416,6 +595,22 @@ public class LevelExitTrigger : MonoBehaviour
         {
             label += $"\nBonus: {levelCompletionBonus} pts";
         }
+
+        // Show timer info if ScoreManagerV2 is available
+        if (Application.isPlaying && ScoreManagerV2.instance != null)
+        {
+            if (ScoreManagerV2.instance.useTimer)
+            {
+                float timeRemaining = ScoreManagerV2.instance.TimeRemaining;
+                int timeBonus = ScoreManagerV2.instance.CalculateTimeBonus();
+                label += $"\nTime: {timeRemaining:F1}s";
+                if (timeBonus > 0)
+                {
+                    label += $"\nTime Bonus: +{timeBonus}";
+                }
+            }
+        }
+
         UnityEditor.Handles.Label(labelPos, label);
 #endif
     }

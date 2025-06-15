@@ -9,7 +9,7 @@ public class DataCollector : MonoBehaviour
         if (other.CompareTag("Player"))
         {
 
-            ScoreManagerV2.instance.AddPoint();
+            ScoreManagerV2.instance.AddPoint(5);
 
             
             Destroy(gameObject);

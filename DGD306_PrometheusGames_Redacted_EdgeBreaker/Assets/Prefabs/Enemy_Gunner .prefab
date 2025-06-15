@@ -873,7 +873,7 @@ MonoBehaviour:
   bulletSpeed: 25
   health: 100
   maxHealth: 100
-  scoreValue: 50
+  scoreValue: 1
   shootSound: {fileID: 8300000, guid: f17da19450c347a4e95db4530f935606, type: 3}
   hurtSound: {fileID: 8300000, guid: baa74edcbb399334a9cf0ef8f8197f7e, type: 3}
   deathSound: {fileID: 8300000, guid: 8a2f8b6fdefdcbf47899e618245506b9, type: 3}
