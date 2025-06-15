@@ -1,6 +1,6 @@
+﻿// Back.cs - Fixed version
 using UnityEngine;
-using UnityEditor.SceneManagement;
-using UnityEngine.SceneManagement;
+using UnityEngine.SceneManagement; // ✅ Correct namespace - REMOVED UnityEditor.SceneManagement
 using System;
 
 public class Back : MonoBehaviour
@@ -9,6 +9,4 @@ public class Back : MonoBehaviour
     {
         SceneManager.LoadScene("MainMenu");
     }
-    
-
 }

@@ -1,13 +1,10 @@
 fileFormatVersion: 2
-guid: 82fe093b52c49de4fbc844869e53491d
+guid: 80cea82f29092bd4c847c90cc924e103
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -8207188638053523598
-    second: respawn_0
-  - first:
-      213: -1559097149305639452
-    second: respawn_1
+      213: -6248741079362886434
+    second: Boss_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -129,13 +126,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: respawn_0
+      name: Boss_0
       rect:
         serializedVersion: 2
-        x: 4
-        y: 8
-        width: 64
-        height: 110
+        x: 0
+        y: 77
+        width: 1920
+        height: 926
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -144,30 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 27f9230da653a1e80800000000000000
-      internalID: -8207188638053523598
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: respawn_1
-      rect:
-        serializedVersion: 2
-        x: 143
-        y: 8
-        width: 64
-        height: 110
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 4ed20553769fc5ae0800000000000000
-      internalID: -1559097149305639452
+      spriteID: ed42f2778130849a0800000000000000
+      internalID: -6248741079362886434
       vertices: []
       indices: 
       edges: []
@@ -185,9 +160,7 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable:
-      respawn_0: -8207188638053523598
-      respawn_1: -1559097149305639452
+    nameFileIdTable: {}
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

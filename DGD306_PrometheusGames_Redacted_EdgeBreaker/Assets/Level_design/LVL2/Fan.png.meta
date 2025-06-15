@@ -64,7 +64,7 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: 1
+    filterMode: 0
     aniso: 1
     mipBias: 0
     wrapU: 1
@@ -102,7 +102,7 @@ TextureImporter:
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 1
+    textureCompression: 0
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -156,10 +156,10 @@ TextureImporter:
       name: Fan_0
       rect:
         serializedVersion: 2
-        x: 60
-        y: 163
-        width: 75
-        height: 72
+        x: 61
+        y: 164
+        width: 73
+        height: 70
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -175,57 +175,13 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Fan_1
-      rect:
-        serializedVersion: 2
-        x: 175
-        y: 211
-        width: 6
-        height: 6
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 3a9a3e5484c20d980800000000000000
-      internalID: -8516258206435792477
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Fan_2
-      rect:
-        serializedVersion: 2
-        x: 187
-        y: 211
-        width: 6
-        height: 6
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 27b677aa1536cd6c0800000000000000
-      internalID: -4117306756920022158
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
       name: Fan_3
       rect:
         serializedVersion: 2
-        x: 231
-        y: 163
-        width: 75
-        height: 72
+        x: 232
+        y: 164
+        width: 73
+        height: 70
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -244,10 +200,10 @@ TextureImporter:
       name: Fan_4
       rect:
         serializedVersion: 2
-        x: 392
-        y: 163
-        width: 76
-        height: 72
+        x: 393
+        y: 164
+        width: 74
+        height: 70
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -263,57 +219,13 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Fan_5
-      rect:
-        serializedVersion: 2
-        x: 175
-        y: 181
-        width: 6
-        height: 6
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 0ebbac093ed4dc6b0800000000000000
-      internalID: -5274473948798862368
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Fan_6
-      rect:
-        serializedVersion: 2
-        x: 187
-        y: 181
-        width: 6
-        height: 6
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 4a39762c232492090800000000000000
-      internalID: -8058837272425426012
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
       name: Fan_7
       rect:
         serializedVersion: 2
-        x: 60
-        y: 56
-        width: 75
-        height: 72
+        x: 61
+        y: 57
+        width: 73
+        height: 70
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -332,10 +244,10 @@ TextureImporter:
       name: Fan_8
       rect:
         serializedVersion: 2
-        x: 231
-        y: 56
-        width: 75
-        height: 72
+        x: 232
+        y: 57
+        width: 73
+        height: 70
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -354,10 +266,10 @@ TextureImporter:
       name: Fan_9
       rect:
         serializedVersion: 2
-        x: 392
-        y: 56
-        width: 76
-        height: 72
+        x: 393
+        y: 57
+        width: 74
+        height: 70
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -376,7 +288,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 836d7081c2583aa46ae53a286314e43a
     internalID: 0
     vertices: []
     indices: 
@@ -388,6 +300,7 @@ TextureImporter:
     nameFileIdTable:
       Fan_0: 6147777685625707044
       Fan_1: -8516258206435792477
+      Fan_10: 870173365
       Fan_2: -4117306756920022158
       Fan_3: 8614278585613346071
       Fan_4: 1238479702247936981
