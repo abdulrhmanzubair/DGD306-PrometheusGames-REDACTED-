@@ -1,6 +1,9 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+/// <summary>
+/// Enhanced player controller (Gunner) with proper damage receiving
+/// </summary>
 public class PlayerController : MonoBehaviour
 {
     public int PlayerIndex { get; set; }
@@ -39,8 +42,16 @@ public class PlayerController : MonoBehaviour
     public float fallMultiplier = 2.5f;
     public float lowJumpMultiplier = 2f;
 
+    [Header("Combat Audio")]
+    public AudioClip[] shootSounds;
+    public AudioClip grenadeThrowSound;
+    [Range(0f, 1f)] public float shootVolume = 0.6f;
+    [Range(0f, 1f)] public float grenadeVolume = 0.5f;
+
     private Rigidbody2D rb;
     private Animator animator;
+    private AudioSource audioSource;
+    private PlayerHealthSystem healthSystem;
     private bool isGrounded;
     private float nextFireTime;
     private float nextGrenadeTime;
@@ -60,6 +71,23 @@ public class PlayerController : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
         keyboard = Keyboard.current;
+
+        // Set up audio
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+        }
+        audioSource.playOnAwake = false;
+        audioSource.spatialBlend = 0.3f;
+
+        // Get health system
+        healthSystem = GetComponent<PlayerHealthSystem>();
+        if (healthSystem == null)
+        {
+            Debug.LogWarning($"No PlayerHealthSystem found on {gameObject.name}! Adding one...");
+            healthSystem = gameObject.AddComponent<PlayerHealthSystem>();
+        }
     }
 
     void Start()
@@ -88,10 +116,22 @@ public class PlayerController : MonoBehaviour
         {
             Debug.LogError("Ground Check Transform is not assigned!");
         }
+
+        // Set health system player index
+        if (healthSystem != null)
+        {
+            healthSystem.PlayerIndex = PlayerIndex;
+        }
     }
 
     void Update()
     {
+        // Don't accept input if dead
+        if (healthSystem != null && !healthSystem.IsAlive)
+        {
+            return;
+        }
+
         HandleInput();
         CheckGrounded();
         HandleJumping();
@@ -255,13 +295,21 @@ public class PlayerController : MonoBehaviour
     {
         PlayerIndex = playerIndex;
         Debug.Log($"GunnerController initialized - PlayerIndex: {playerIndex}");
+
+        // Set health system player index
+        if (healthSystem != null)
+        {
+            healthSystem.PlayerIndex = PlayerIndex;
+        }
     }
 
-    // Rest of your existing methods stay the same...
     void FixedUpdate()
     {
-        Move();
-        ApplyBetterJump();
+        if (healthSystem == null || healthSystem.IsAlive)
+        {
+            Move();
+            ApplyBetterJump();
+        }
     }
 
     void Move()
@@ -306,8 +354,21 @@ public class PlayerController : MonoBehaviour
         if (Time.time >= nextFireTime && fire1Pressed)
         {
             nextFireTime = Time.time + fireRate;
+
+            // Play shoot sound
+            if (shootSounds.Length > 0 && audioSource != null)
+            {
+                AudioClip shootClip = shootSounds[Random.Range(0, shootSounds.Length)];
+                audioSource.PlayOneShot(shootClip, shootVolume);
+            }
+
             GameObject bullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.identity);
-            bullet.GetComponent<Bullet>().SetDirection(GetAimDirection());
+            Bullet bulletScript = bullet.GetComponent<Bullet>();
+            if (bulletScript != null)
+            {
+                bulletScript.SetDirection(GetAimDirection());
+                bulletScript.SetShooter("Player");
+            }
             fire1Pressed = false;
         }
 
@@ -322,6 +383,13 @@ public class PlayerController : MonoBehaviour
     void ThrowGrenade()
     {
         if (grenadePrefab == null) return;
+
+        // Play grenade throw sound
+        if (grenadeThrowSound != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(grenadeThrowSound, grenadeVolume);
+        }
+
         Vector2 throwDirection = GetAimDirection();
         GameObject grenade = Instantiate(grenadePrefab, firePoint.position, Quaternion.identity);
         if (grenade == null) return;
@@ -330,6 +398,7 @@ public class PlayerController : MonoBehaviour
         if (grenadeScript != null)
         {
             grenadeScript.Launch(throwDirection, grenadeForce);
+            // grenadeScript.SetShooter("Player"); // Remove this line if Grenade doesn't have SetShooter
         }
         else
         {
@@ -376,6 +445,48 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    // Handle taking damage from enemies
+    void OnTriggerEnter2D(Collider2D other)
+    {
+        // Take damage from enemy projectiles
+        if (other.CompareTag("EnemyProjectile"))
+        {
+            Bullet bullet = other.GetComponent<Bullet>();
+            if (bullet != null && healthSystem != null)
+            {
+                healthSystem.TakeDamage(bullet.damage);
+                Debug.Log($"Player {PlayerIndex} hit by enemy bullet for {bullet.damage} damage!");
+            }
+        }
+
+        // Take damage from enemy contact
+        if (other.CompareTag("Enemy"))
+        {
+            if (healthSystem != null)
+            {
+                float contactDamage = 10f; // Default contact damage
+
+                // Try to get specific enemy damage
+                UniversalEnemyHealth enemyHealth = other.GetComponent<UniversalEnemyHealth>();
+                if (enemyHealth != null)
+                {
+                    // Could have contact damage property on enemy
+                    contactDamage = 8f; // Basic enemy contact damage
+                }
+
+                healthSystem.TakeDamage(contactDamage);
+                Debug.Log($"Player {PlayerIndex} hit by enemy contact for {contactDamage} damage!");
+
+                // Push player away from enemy
+                Vector2 pushDirection = (transform.position - other.transform.position).normalized;
+                if (rb != null)
+                {
+                    rb.AddForce(pushDirection * 6f, ForceMode2D.Impulse);
+                }
+            }
+        }
+    }
+
     public bool IsGrenadeReady() => Time.time >= nextGrenadeTime;
     public float GetGrenadeCooldownRemaining() => Mathf.Max(0f, nextGrenadeTime - Time.time);
     Vector2 GetAimDirection() => aimInput != Vector2.zero ? aimInput.normalized : (Vector2)transform.right;
@@ -388,6 +499,37 @@ public class PlayerController : MonoBehaviour
             animator.SetFloat("yVelocity", rb.linearVelocity.y);
             animator.SetBool("isGrounded", isGrounded);
             animator.SetBool("isJumping", !isGrounded && rb.linearVelocity.y > 0.1f);
+
+            // Set invulnerability state
+            if (healthSystem != null)
+            {
+                animator.SetBool("isInvulnerable", healthSystem.IsInvulnerable);
+            }
+        }
+    }
+
+    // Public methods for external access
+    public PlayerHealthSystem GetHealthSystem()
+    {
+        return healthSystem;
+    }
+
+    // Debug visualization
+    void OnDrawGizmosSelected()
+    {
+        // Draw health status
+        if (healthSystem != null)
+        {
+            if (!healthSystem.IsAlive)
+            {
+                Gizmos.color = Color.red;
+                Gizmos.DrawWireSphere(transform.position, 2f);
+            }
+            else if (healthSystem.IsInvulnerable)
+            {
+                Gizmos.color = Color.yellow;
+                Gizmos.DrawWireSphere(transform.position, 1.5f);
+            }
         }
     }
 }

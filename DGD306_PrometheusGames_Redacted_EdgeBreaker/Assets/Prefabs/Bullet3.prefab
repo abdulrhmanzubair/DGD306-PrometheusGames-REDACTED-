@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: -957760310780712008}
   - component: {fileID: 2534926644226548403}
   - component: {fileID: 1968732850579015275}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Bullet3
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -175,7 +175,7 @@ CapsuleCollider2D:
     m_Bits: 0
   m_ExcludeLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 256
   m_LayerOverridePriority: 0
   m_ForceSendLayers:
     serializedVersion: 2
@@ -206,7 +206,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2936249480970571706}
   - component: {fileID: 3288705536048216186}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Light 2D
   m_TagString: Untagged
   m_Icon: {fileID: 0}

@@ -143,7 +143,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3183933290419525732, guid: c622c1069e5afdd4f80b50f03ca1e141, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8642090004789708211, guid: c622c1069e5afdd4f80b50f03ca1e141, type: 3}
       propertyPath: m_JoinBehavior
@@ -378,6 +378,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: CharacterSelectionManager
       objectReference: {fileID: 0}
+    - target: {fileID: 2928719393966934508, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4517828355449723289, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
       propertyPath: m_LocalPosition.x
       value: 479.29684
@@ -420,7 +424,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5150786773801817825, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
       propertyPath: m_Enabled
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5150786773801817825, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
       propertyPath: readyPrompt
@@ -428,11 +432,11 @@ PrefabInstance:
       objectReference: {fileID: 754624436}
     - target: {fileID: 5150786773801817825, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
       propertyPath: readyColor.b
-      value: 0.3226415
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5150786773801817825, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
       propertyPath: readyColor.g
-      value: 0.8621224
+      value: 0.79768777
       objectReference: {fileID: 0}
     - target: {fileID: 5150786773801817825, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
       propertyPath: readyColor.r
@@ -526,8 +530,49 @@ PrefabInstance:
     - {fileID: 2229619227062992971, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2928719393966934508, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 19525008873668766}
   m_SourcePrefab: {fileID: 100100000, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
+--- !u!1 &19525008873668765 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2928719393966934508, guid: b2af6979c11a2494083dd59985487ea5, type: 3}
+  m_PrefabInstance: {fileID: 19525008873668764}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &19525008873668766
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 19525008873668765}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f3aa58320e51b8f419c05db5388658a9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  availableCharacters:
+  - type: 0
+    name: Gunner
+    portrait: {fileID: 9195165912716612483, guid: ca2956f65a038f441ad8726014416f73, type: 3}
+    prefab: {fileID: 5123290507034825827, guid: 7812fd1a05891da4bb88c201083434c5, type: 3}
+    description: gunner
+  - type: 1
+    name: Melee
+    portrait: {fileID: 1758356011, guid: 8141b3dd6829dcf4798562ccb877220b, type: 3}
+    prefab: {fileID: 8592517418037104678, guid: f7d341c7d38415f448c796ba014cd50c, type: 3}
+    description: 
+  playerUISlots:
+  - {fileID: 1219899650}
+  - {fileID: 1861403126}
+  readyPrompt: {fileID: 754624436}
+  gameplaySceneName: LVL_001
+  selectedColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  unselectedColor: {r: 1, g: 1, b: 1, a: 1}
+  readyColor: {r: 0, g: 1, b: 0, a: 1}
+  maxPlayers: 2
+  allowKeyboardSharing: 1
 --- !u!1001 &84464862644037487
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -546,7 +591,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7380715390736765262, guid: f3d9c8f69a383da4fa4b7565cadd67f0, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7849996668640101775, guid: f3d9c8f69a383da4fa4b7565cadd67f0, type: 3}
       propertyPath: m_LocalPosition.x
@@ -784,6 +829,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5466904610799520171, guid: 4716883ee66c8044abf5785fc473d8ee, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7445538479210936309, guid: 4716883ee66c8044abf5785fc473d8ee, type: 3}
+      propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8781464439555549963, guid: 4716883ee66c8044abf5785fc473d8ee, type: 3}

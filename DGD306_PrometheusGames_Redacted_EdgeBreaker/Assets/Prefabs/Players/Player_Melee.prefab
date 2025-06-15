@@ -158,10 +158,10 @@ GameObject:
   - component: {fileID: 4138315315807038641}
   - component: {fileID: 17599955416509841}
   - component: {fileID: 4211302096509789738}
-  - component: {fileID: 4609533835695921402}
   - component: {fileID: 6604136961680569169}
   - component: {fileID: 1061992957700373386}
   - component: {fileID: 2643967937031675534}
+  - component: {fileID: 9065524149847653437}
   m_Layer: 7
   m_Name: Player_Melee
   m_TagString: Player
@@ -316,36 +316,6 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
---- !u!114 &4609533835695921402
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8592517418037104678}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e57bd008dc0998b4f91e492b4ab6773a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  moveSpeed: 16
-  jumpForce: 12
-  groundCheck: {fileID: 2862022383170784311}
-  groundLayer:
-    serializedVersion: 2
-    m_Bits: 8
-  bulletPrefab: {fileID: 3092579064342640799, guid: ebefb93e70dcfcd43a17064c8f3f8e14, type: 3}
-  grenadePrefab: {fileID: 0}
-  firePoint: {fileID: 4179661817814541990}
-  fireRate: 0.2
-  grenadeCooldown: 3
-  grenadeForce: 12
-  grenadeCooldownFill: {fileID: 0}
-  grenadeCooldownText: {fileID: 0}
-  cooldownColor: {r: 1, g: 0, b: 0, a: 1}
-  readyColor: {r: 0, g: 1, b: 0, a: 1}
-  fallMultiplier: 2.5
-  lowJumpMultiplier: 2
 --- !u!114 &6604136961680569169
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -522,6 +492,18 @@ MonoBehaviour:
   dashDuration: 0.2
   fallMultiplier: 2.5
   lowJumpMultiplier: 2
+--- !u!114 &9065524149847653437
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8592517418037104678}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fede8f7291e7db04d98354f7b2a47ee4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &9114657336432228754
 GameObject:
   m_ObjectHideFlags: 0
