@@ -937,7 +937,7 @@ MonoBehaviour:
   healthBarOffset: {x: 0, y: 1.5, z: 0}
   showHealthBar: 1
   hideWhenFullHealth: 0
-  enemySprite: {fileID: 0}
+  enemySprite: {fileID: 4440445852997806918}
   damageFlashColor: {r: 1, g: 0, b: 0, a: 1}
   flashDuration: 0.1
   damageTextPrefab: {fileID: 0}
@@ -953,7 +953,7 @@ MonoBehaviour:
   dropItems: 1
   possibleDrops:
   - {fileID: 3661759832574529293, guid: 9953129e2fdf8964fb4513bf6d32a747, type: 3}
-  dropChance: 0.984
+  dropChance: 1
   canBeKnockedBack: 1
   knockbackResistance: 1
 --- !u!1 &8103657120196516902

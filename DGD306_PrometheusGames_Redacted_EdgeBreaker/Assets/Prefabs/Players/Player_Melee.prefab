@@ -226,10 +226,8 @@ MonoBehaviour:
   autoPosition: 1
   layoutType: 3
   marginFromEdge: 50
-  spacingBetweenElements: 20
   customPosition: {x: 0, y: 0}
   customAnchor: 8
-  showDebugInfo: 1
 --- !u!1 &1001681102686891232
 GameObject:
   m_ObjectHideFlags: 0
@@ -418,7 +416,7 @@ TrailRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Time: 0.5
+  m_Time: 1000
   m_PreviewTimeScale: 1
   m_Parameters:
     serializedVersion: 3
@@ -949,6 +947,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7944057693084603276}
+  - component: {fileID: 4306109882122561833}
+  - component: {fileID: 6255387594645230469}
   m_Layer: 0
   m_Name: respawn (1)
   m_TagString: Untagged
@@ -965,12 +965,60 @@ Transform:
   m_GameObject: {fileID: 7702110052050528696}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -27.820002, y: 0.15, z: -0.08160261}
+  m_LocalPosition: {x: -9.6, y: 2.5, z: -0.08160261}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 752872871324895113}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!54 &4306109882122561833
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7702110052050528696}
+  serializedVersion: 4
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 126
+  m_CollisionDetection: 0
+--- !u!65 &6255387594645230469
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7702110052050528696}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &8278299548468159083
 GameObject:
   m_ObjectHideFlags: 0
@@ -1475,7 +1523,7 @@ MonoBehaviour:
   healthyColor: {r: 0, g: 1, b: 0, a: 1}
   damagedColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   criticalColor: {r: 1, g: 0, b: 0, a: 1}
-  playerSprite: {fileID: 0}
+  playerSprite: {fileID: 4138315315807038641}
   damageFlashColor: {r: 1, g: 0, b: 0, a: 1}
   flashDuration: 0.1
   damageTextPrefab: {fileID: 0}
@@ -1487,7 +1535,7 @@ MonoBehaviour:
   hurtVolume: 0.7
   deathVolume: 0.8
   healVolume: 0.5
-  respawnDelay: 3
+  respawnDelay: 0.3
   respawnPoint: {fileID: 7944057693084603276}
   deathEffectPrefab: {fileID: 0}
 --- !u!1 &9114657336432228754

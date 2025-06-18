@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8363832116292999770}
   - component: {fileID: 1111546523824567525}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Light 2D
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -97,9 +97,9 @@ GameObject:
   - component: {fileID: 4686445907106687710}
   - component: {fileID: 3841899384371022483}
   - component: {fileID: 8274224506277937666}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Melee_shield
-  m_TagString: Untagged
+  m_TagString: Shield
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -113,7 +113,7 @@ Transform:
   m_GameObject: {fileID: 5388729049444113631}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -12.578, y: 0.71901, z: 0}
+  m_LocalPosition: {x: -12.578, y: 1.7, z: 0}
   m_LocalScale: {x: 15.9032545, y: 14.384851, z: 13.319307}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -187,8 +187,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 65683da7b895fa04284827cda79d7eed, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  followOffset: {x: 0, y: 0, z: 0}
-  maxHealth: 5
+  followOffset: {x: 0, y: 1, z: 0}
+  maxHealth: 1000
 --- !u!50 &3841899384371022483
 Rigidbody2D:
   serializedVersion: 5
@@ -215,7 +215,7 @@ Rigidbody2D:
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 4
+  m_Constraints: 0
 --- !u!70 &8274224506277937666
 CapsuleCollider2D:
   m_ObjectHideFlags: 0
@@ -229,11 +229,11 @@ CapsuleCollider2D:
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
-    m_Bits: 64
+    m_Bits: 320
   m_ExcludeLayers:
     serializedVersion: 2
     m_Bits: 128
-  m_LayerOverridePriority: 0
+  m_LayerOverridePriority: 4
   m_ForceSendLayers:
     serializedVersion: 2
     m_Bits: 4294967295

@@ -61,7 +61,7 @@ Transform:
   m_GameObject: {fileID: 1201838992196825090}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -33.9, y: -0.42, z: -0.08160261}
+  m_LocalPosition: {x: -14.94, y: 15.2, z: -0.08160261}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -176,7 +176,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -365.1, y: -187.9}
+  m_AnchoredPosition: {x: -101.850006, y: 169.5}
   m_SizeDelta: {x: 160, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &866969966563944392
@@ -592,25 +592,23 @@ MonoBehaviour:
   invulnerabilityTime: 1
   healthBar: {fileID: 6434294315810746944}
   healthText: {fileID: 8340660431930016764}
-  healthBarFill: {fileID: 1392376510502640342}
+  healthBarFill: {fileID: 1616193241588568197}
   healthyColor: {r: 0, g: 1, b: 0, a: 1}
   damagedColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   criticalColor: {r: 1, g: 0, b: 0, a: 1}
-  playerSprite: {fileID: 0}
+  playerSprite: {fileID: 7554890571519758214}
   damageFlashColor: {r: 1, g: 0, b: 0, a: 1}
-  flashDuration: 0.3
+  flashDuration: 0.1
   damageTextPrefab: {fileID: 0}
-  hurtSounds:
-  - {fileID: 8300000, guid: baa74edcbb399334a9cf0ef8f8197f7e, type: 3}
-  deathSounds:
-  - {fileID: 8300000, guid: 8a2f8b6fdefdcbf47899e618245506b9, type: 3}
-  healSound: {fileID: 8300000, guid: baa74edcbb399334a9cf0ef8f8197f7e, type: 3}
+  hurtSounds: []
+  deathSounds: []
+  healSound: {fileID: 0}
   hurtVolume: 0.7
   deathVolume: 0.8
   healVolume: 0.5
   respawnDelay: 0.4
-  respawnPoint: {fileID: 199680460213162210}
-  deathEffectPrefab: {fileID: 1780990898665742232, guid: b55af54d10fa9d847a5ac7ddbe2a4b2b, type: 3}
+  respawnPoint: {fileID: 0}
+  deathEffectPrefab: {fileID: 0}
 --- !u!1 &5526802734562038661
 GameObject:
   m_ObjectHideFlags: 0
@@ -647,7 +645,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -420.25, y: -167.4}
+  m_AnchoredPosition: {x: -157, y: 190}
   m_SizeDelta: {x: 160, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &6434294315810746944
@@ -958,10 +956,8 @@ MonoBehaviour:
   autoPosition: 1
   layoutType: 3
   marginFromEdge: 50
-  spacingBetweenElements: 20
   customPosition: {x: 0, y: 0}
   customAnchor: 6
-  showDebugInfo: 1
 --- !u!1 &7111351199964284594
 GameObject:
   m_ObjectHideFlags: 0
@@ -1080,7 +1076,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -426.4, y: -109.6}
+  m_AnchoredPosition: {x: -163.15, y: 247.79999}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5104045445377273527
