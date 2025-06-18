@@ -163,7 +163,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 5
   m_Sprite: {fileID: 2255388149799060848, guid: f70b92308af302e42b71a8099dcea07a, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -223,7 +223,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a7e4ab8104e53b745b4edd63ddfc05e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  dataValue: 100
 --- !u!95 &4867988793508015709
 Animator:
   serializedVersion: 7
@@ -232,7 +231,7 @@ Animator:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3661759832574529293}
-  m_Enabled: 0
+  m_Enabled: 1
   m_Avatar: {fileID: 0}
   m_Controller: {fileID: 9100000, guid: 4a97f167704c98d4d873a90453d38c0f, type: 2}
   m_CullingMode: 0

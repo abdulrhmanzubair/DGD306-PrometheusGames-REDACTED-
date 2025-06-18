@@ -1,89 +1,5 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &540583085533240199
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 8363832116292999770}
-  - component: {fileID: 1111546523824567525}
-  m_Layer: 7
-  m_Name: Light 2D
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &8363832116292999770
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 540583085533240199}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.002, y: 0.011, z: 0}
-  m_LocalScale: {x: 0.06288021, y: 0.06951758, z: 0.07507898}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 6322739393743848279}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1111546523824567525
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 540583085533240199}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 073797afb82c5a1438f328866b10b3f0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_ComponentVersion: 2
-  m_LightType: 3
-  m_BlendStyleIndex: 0
-  m_FalloffIntensity: 0.5
-  m_Color: {r: 0.68347234, g: 0.33241364, b: 0.8490566, a: 1}
-  m_Intensity: 16.32
-  m_LightVolumeIntensity: 1
-  m_LightVolumeEnabled: 0
-  m_ApplyToSortingLayers: 00000000
-  m_LightCookieSprite: {fileID: 0}
-  m_DeprecatedPointLightCookieSprite: {fileID: 0}
-  m_LightOrder: 0
-  m_AlphaBlendOnOverlap: 0
-  m_OverlapOperation: 0
-  m_NormalMapDistance: 3
-  m_NormalMapQuality: 2
-  m_UseNormalMap: 0
-  m_ShadowsEnabled: 1
-  m_ShadowIntensity: 0.75
-  m_ShadowSoftness: 0.3
-  m_ShadowSoftnessFalloffIntensity: 0.5
-  m_ShadowVolumeIntensityEnabled: 0
-  m_ShadowVolumeIntensity: 0.75
-  m_LocalBounds:
-    m_Center: {x: 0, y: -0.00000011920929, z: 0}
-    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
-  m_PointLightInnerAngle: 360
-  m_PointLightOuterAngle: 360
-  m_PointLightInnerRadius: 3.79
-  m_PointLightOuterRadius: 5.04
-  m_ShapeLightParametricSides: 5
-  m_ShapeLightParametricAngleOffset: 0
-  m_ShapeLightParametricRadius: 1
-  m_ShapeLightFalloffSize: 0.5
-  m_ShapeLightFalloffOffset: {x: 0, y: 0}
-  m_ShapePath:
-  - {x: -0.5, y: -0.5, z: 0}
-  - {x: 0.5, y: -0.5, z: 0}
-  - {x: 0.5, y: 0.5, z: 0}
-  - {x: -0.5, y: 0.5, z: 0}
 --- !u!1 &5388729049444113631
 GameObject:
   m_ObjectHideFlags: 0
@@ -97,7 +13,8 @@ GameObject:
   - component: {fileID: 4686445907106687710}
   - component: {fileID: 3841899384371022483}
   - component: {fileID: 8274224506277937666}
-  m_Layer: 7
+  - component: {fileID: 8705866773543013936}
+  m_Layer: 10
   m_Name: Melee_shield
   m_TagString: Shield
   m_Icon: {fileID: 0}
@@ -113,11 +30,10 @@ Transform:
   m_GameObject: {fileID: 5388729049444113631}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -12.578, y: 1.7, z: 0}
+  m_LocalPosition: {x: -12.99, y: 1.78, z: 0}
   m_LocalScale: {x: 15.9032545, y: 14.384851, z: 13.319307}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 8363832116292999770}
+  m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &4420860317560285529
@@ -187,8 +103,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 65683da7b895fa04284827cda79d7eed, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  followOffset: {x: 0, y: 1, z: 0}
+  followOffset: {x: 1, y: 1, z: 0}
   maxHealth: 1000
+  protectionRadius: 5.48
+  useContinuousDetection: 1
+  detectionUpdateRate: 0.001
+  projectileLayer:
+    serializedVersion: 2
+    m_Bits: 2304
+  blockContactDamage: 1
+  blockProjectiles: 1
+  blockCooldown: 0.001
+  blockEffect: {fileID: 0}
+  damageEffect: {fileID: 0}
+  healthColors:
+  - {r: 1, g: 1, b: 1, a: 1}
+  - {r: 1, g: 0.99358517, b: 0.028301716, a: 1}
+  - {r: 1, g: 0.7149656, b: 0.027450979, a: 1}
+  blockSound: {fileID: 0}
+  damageSound: {fileID: 0}
+  breakSound: {fileID: 0}
+  audioVolume: 0.7
 --- !u!50 &3841899384371022483
 Rigidbody2D:
   serializedVersion: 5
@@ -197,7 +132,7 @@ Rigidbody2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5388729049444113631}
-  m_BodyType: 0
+  m_BodyType: 1
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
@@ -215,7 +150,7 @@ Rigidbody2D:
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 0
+  m_Constraints: 4
 --- !u!70 &8274224506277937666
 CapsuleCollider2D:
   m_ObjectHideFlags: 0
@@ -229,11 +164,11 @@ CapsuleCollider2D:
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
-    m_Bits: 320
+    m_Bits: 2304
   m_ExcludeLayers:
     serializedVersion: 2
-    m_Bits: 128
-  m_LayerOverridePriority: 4
+    m_Bits: 0
+  m_LayerOverridePriority: 0
   m_ForceSendLayers:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -250,6 +185,21 @@ CapsuleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: -0.008057435, y: 0.025446814}
-  m_Size: {x: 0.63775253, y: 0.7050709}
+  m_Offset: {x: -0.0037478926, y: -0.00021609548}
+  m_Size: {x: 0.6370573, y: 0.7043024}
   m_Direction: 0
+--- !u!114 &8705866773543013936
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5388729049444113631}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da935e5720b6c9744a7dcf24a2877ccd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enableDebugLogs: 1
+  visualizeDetection: 1
+  detectionColor: {r: 1, g: 0, b: 0, a: 1}

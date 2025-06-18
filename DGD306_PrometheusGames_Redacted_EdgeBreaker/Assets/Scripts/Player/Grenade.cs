@@ -1,130 +1,221 @@
 using UnityEngine;
+using System.Collections;
 
+/// <summary>
+/// Simple Grenade script that matches the melee controller requirements
+/// </summary>
 public class Grenade : MonoBehaviour
 {
-    [Header("Grenade Settings")]
+    [Header("Explosion Settings")]
     public float explosionRadius = 3f;
     public float explosionDamage = 50f;
-    public float fuseTime = 3f; // Time before explosion
+    public float explosionForce = 15f;
     public LayerMask damageableLayers = -1;
 
-    [Header("Visual Effects")]
+    [Header("Timer Settings")]
+    public float fuseTime = 3f;
+
+    [Header("Effects")]
     public GameObject explosionEffectPrefab;
-    public float explosionEffectDuration = 2f;
-
-    [Header("Audio")]
     public AudioClip explosionSound;
+    [Range(0f, 1f)] public float explosionVolume = 1f;
 
-    private Rigidbody2D rb;
-    private bool hasExploded = false;
     private float timer;
-
-    void Awake()
-    {
-        rb = GetComponent<Rigidbody2D>();
-
-        // Check if Rigidbody2D exists
-        if (rb == null)
-        {
-            Debug.LogError("Grenade: No Rigidbody2D component found! Adding one automatically.");
-            rb = gameObject.AddComponent<Rigidbody2D>();
-        }
-    }
+    private bool hasExploded = false;
+    private GameObject thrower;
+    private Rigidbody2D rb;
 
     void Start()
     {
+        rb = GetComponent<Rigidbody2D>();
         timer = fuseTime;
-
-        // Normal physics with gravity for natural arc
-        rb.gravityScale = 1f;
-        rb.angularVelocity = Random.Range(-180f, 180f);
     }
 
     void Update()
     {
-        // Countdown to explosion
+        if (hasExploded) return;
+
         timer -= Time.deltaTime;
-        if (timer <= 0f && !hasExploded)
+
+        if (timer <= 0)
         {
             Explode();
         }
     }
 
-    void OnCollisionEnter2D(Collision2D collision)
+    // Required methods for Player_Melee_Controller1
+    public void SetTimer(float newTimer)
     {
-        // Bounce off surfaces with energy loss
-        if (collision.gameObject.CompareTag("Ground") || collision.gameObject.layer == LayerMask.NameToLayer("Ground"))
+        fuseTime = newTimer;
+        timer = newTimer;
+    }
+
+    public void SetThrower(GameObject throwingObject)
+    {
+        thrower = throwingObject;
+
+        // Ignore collision with thrower initially
+        if (throwingObject != null)
         {
-            rb.linearVelocity = rb.linearVelocity * 0.7f; // Lose some energy on bounce
+            Collider2D throwerCollider = throwingObject.GetComponent<Collider2D>();
+            Collider2D grenadeCollider = GetComponent<Collider2D>();
+
+            if (throwerCollider != null && grenadeCollider != null)
+            {
+                Physics2D.IgnoreCollision(grenadeCollider, throwerCollider, true);
+                StartCoroutine(EnableCollisionWithThrower(throwerCollider, grenadeCollider));
+            }
+        }
+    }
+
+    // Required method for PlayerController (gunner)
+    public void Launch(Vector2 direction, float force, GameObject launcher = null)
+    {
+        if (rb != null)
+        {
+            rb.linearVelocity = direction.normalized * force;
+        }
+
+        if (launcher != null)
+        {
+            SetThrower(launcher);
+        }
+
+        Debug.Log($"Grenade launched with force {force} in direction {direction}");
+    }
+
+    // Alternative Launch method with different parameters (in case your PlayerController uses different signature)
+    public void Launch(Vector2 velocity)
+    {
+        if (rb != null)
+        {
+            rb.linearVelocity = velocity;
+        }
+
+        Debug.Log($"Grenade launched with velocity {velocity}");
+    }
+
+    // Alternative Launch method for more complex setup
+    public void Launch(Vector2 direction, float force, float fuseTimer, GameObject launcher)
+    {
+        // Set the fuse timer
+        SetTimer(fuseTimer);
+
+        // Set the thrower
+        SetThrower(launcher);
+
+        // Launch the grenade
+        if (rb != null)
+        {
+            rb.linearVelocity = direction.normalized * force;
+        }
+
+        Debug.Log($"Grenade launched with force {force}, fuse timer {fuseTimer}");
+    }
+
+    IEnumerator EnableCollisionWithThrower(Collider2D throwerCollider, Collider2D grenadeCollider)
+    {
+        yield return new WaitForSeconds(0.5f);
+
+        if (throwerCollider != null && grenadeCollider != null)
+        {
+            Physics2D.IgnoreCollision(grenadeCollider, throwerCollider, false);
         }
     }
 
     void Explode()
     {
         if (hasExploded) return;
+
         hasExploded = true;
 
-        // Find all objects in explosion radius
-        Collider2D[] objectsInRange = Physics2D.OverlapCircleAll(transform.position, explosionRadius, damageableLayers);
-
-        foreach (Collider2D obj in objectsInRange)
-        {
-            // Calculate distance for damage falloff
-            float distance = Vector2.Distance(transform.position, obj.transform.position);
-            float damageMultiplier = Mathf.Clamp01(1f - (distance / explosionRadius));
-            float actualDamage = explosionDamage * damageMultiplier;
-
-            // Try to damage the object
-            Enemy enemy = obj.GetComponent<Enemy>();
-            if (enemy != null)
-            {
-                enemy.TakeDamage(actualDamage);
-                Debug.Log($"Grenade damaged {obj.name} for {actualDamage} damage!");
-            }
-
-            // Add knockback effect
-            Rigidbody2D targetRb = obj.GetComponent<Rigidbody2D>();
-            if (targetRb != null)
-            {
-                Vector2 knockbackDirection = (obj.transform.position - transform.position).normalized;
-                float knockbackForce = (explosionDamage * damageMultiplier) * 0.5f;
-                targetRb.AddForce(knockbackDirection * knockbackForce, ForceMode2D.Impulse);
-            }
-        }
-
-        // Create explosion effect
-        if (explosionEffectPrefab != null)
-        {
-            GameObject effect = Instantiate(explosionEffectPrefab, transform.position, Quaternion.identity);
-            Destroy(effect, explosionEffectDuration);
-        }
+        Debug.Log($"Grenade exploded at {transform.position}!");
 
         // Play explosion sound
         if (explosionSound != null)
         {
-            AudioSource.PlayClipAtPoint(explosionSound, transform.position);
+            AudioSource.PlayClipAtPoint(explosionSound, transform.position, explosionVolume);
         }
 
-        Debug.Log($"Grenade exploded! Affected {objectsInRange.Length} objects.");
+        // Spawn explosion effect
+        if (explosionEffectPrefab != null)
+        {
+            GameObject explosion = Instantiate(explosionEffectPrefab, transform.position, Quaternion.identity);
+            Destroy(explosion, 5f);
+        }
+
+        // Deal explosion damage
+        DealExplosionDamage();
+
+        // Destroy grenade
         Destroy(gameObject);
     }
 
-    // Launch the grenade forward
-    public void Launch(Vector2 direction, float force)
+    void DealExplosionDamage()
     {
-        if (rb == null)
+        Collider2D[] objectsInRange = Physics2D.OverlapCircleAll(transform.position, explosionRadius, damageableLayers);
+
+        foreach (Collider2D obj in objectsInRange)
         {
-            Debug.LogError("Grenade: Cannot launch - Rigidbody2D is null!");
+            // Skip the thrower for a brief moment to prevent self-damage
+            if (obj.gameObject == thrower && timer > fuseTime - 0.5f) continue;
+
+            // Calculate distance for damage falloff
+            float distance = Vector2.Distance(transform.position, obj.transform.position);
+            float damageMultiplier = 1f - (distance / explosionRadius);
+            damageMultiplier = Mathf.Clamp01(damageMultiplier);
+
+            float finalDamage = explosionDamage * damageMultiplier;
+            DealDamageToTarget(obj, finalDamage);
+            ApplyExplosionForce(obj, damageMultiplier);
+        }
+    }
+
+    void DealDamageToTarget(Collider2D target, float damage)
+    {
+        // Try IDamageable interface first
+        IDamageable damageable = target.GetComponent<IDamageable>();
+        if (damageable != null)
+        {
+            damageable.TakeDamage(damage);
+            Debug.Log($"Grenade dealt {damage:F1} damage to {target.name}");
             return;
         }
 
-        rb.linearVelocity = direction * force;
-        Debug.Log($"Grenade launched with velocity: {rb.linearVelocity}");
+        // Try PlayerHealthSystem
+        PlayerHealthSystem playerHealth = target.GetComponent<PlayerHealthSystem>();
+        if (playerHealth != null)
+        {
+            playerHealth.TakeDamage(damage);
+            Debug.Log($"Grenade dealt {damage:F1} damage to Player {playerHealth.PlayerIndex}");
+            return;
+        }
+
+        // Try UniversalEnemyHealth
+        UniversalEnemyHealth enemyHealth = target.GetComponent<UniversalEnemyHealth>();
+        if (enemyHealth != null)
+        {
+            enemyHealth.TakeDamage(damage);
+            Debug.Log($"Grenade dealt {damage:F1} damage to enemy {target.name}");
+            return;
+        }
     }
 
-    // Visualize explosion radius
+    void ApplyExplosionForce(Collider2D target, float forceMultiplier)
+    {
+        Rigidbody2D targetRb = target.GetComponent<Rigidbody2D>();
+        if (targetRb != null)
+        {
+            Vector2 forceDirection = (target.transform.position - transform.position).normalized;
+            float finalForce = explosionForce * forceMultiplier;
+
+            targetRb.AddForce(forceDirection * finalForce, ForceMode2D.Impulse);
+        }
+    }
+
     void OnDrawGizmosSelected()
     {
+        // Draw explosion radius
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, explosionRadius);
     }

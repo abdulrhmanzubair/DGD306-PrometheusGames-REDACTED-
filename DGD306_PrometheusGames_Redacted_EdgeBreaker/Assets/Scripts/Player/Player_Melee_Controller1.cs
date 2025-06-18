@@ -1,13 +1,16 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections.Generic;
 
 /// <summary>
-/// Bulletproof melee controller with reliable Genji-style dash slash
-/// Based on proven Unity 2D melee combat patterns
+/// Enhanced melee controller optimized for isolated input system
+/// Each player gets completely independent gamepad + keyboard controls
+/// Features bulletproof Genji-style dash slash and guard system
 /// </summary>
 public class Player_Melee_Controller1 : MonoBehaviour
 {
+    public int PlayerIndex { get; set; }
+
     [Header("Movement")]
     public float moveSpeed = 5f;
     public float jumpForce = 12f;
@@ -54,8 +57,24 @@ public class Player_Melee_Controller1 : MonoBehaviour
     private AudioSource audioSource;
     private PlayerHealthSystem healthSystem;
     private bool isGrounded;
-    private Vector2 moveInput;
     private Vector2 aimDirection = Vector2.right;
+
+    // ISOLATED INPUT SYSTEM
+    private FlexibleInputInjector inputInjector;
+    private bool hasIsolatedInput = false;
+
+    // Input states
+    private Vector2 moveInput;
+    private bool jumpPressed;
+    private bool dashPressed;
+    private bool guardPressed;
+    private bool attackPressed;
+
+    // Fallback input (only used if isolated system fails)
+    private SimpleFlexibleInput flexInput;
+    private PlayerDeviceInfo deviceInfo;
+    private InputDevice assignedDevice;
+    private Keyboard keyboard;
 
     // Guard system
     private bool isGuardOnCooldown = false;
@@ -75,21 +94,6 @@ public class Player_Melee_Controller1 : MonoBehaviour
     private float lastRegularDashTime = -999f;
     private bool isRegularDashing = false;
     private float regularDashEndTime;
-
-    // Input integration
-    private FlexibleInputInjector flexInjector;
-    private SimpleFlexibleInput flexInput;
-    private PlayerDeviceInfo deviceInfo;
-    private InputDevice assignedDevice;
-
-    // Input states
-    private bool jumpPressed;
-    private bool dashPressed;
-    private bool guardPressed;
-    private bool attackPressed;
-
-    public int PlayerIndex { get; set; }
-    private Keyboard keyboard;
 
     void Awake()
     {
@@ -117,30 +121,42 @@ public class Player_Melee_Controller1 : MonoBehaviour
 
     void Start()
     {
-        // Check for flexible input integration
-        flexInjector = GetComponent<FlexibleInputInjector>();
-        flexInput = GetComponent<SimpleFlexibleInput>();
-
-        if (flexInjector != null || flexInput != null)
-        {
-            Debug.Log($"MeleeController - FLEXIBLE INPUT ACTIVE for Player {PlayerIndex}");
-        }
-        else
-        {
-            // Fallback to device system
-            deviceInfo = GetComponent<PlayerDeviceInfo>();
-            if (deviceInfo != null)
-            {
-                assignedDevice = deviceInfo.AssignedDevice;
-                PlayerIndex = deviceInfo.PlayerIndex;
-                Debug.Log($"MeleeController - Device: {assignedDevice?.name}, PlayerIndex: {PlayerIndex}");
-            }
-        }
+        // PRIORITY: Always check for isolated input components first (they may be added later)
+        CheckForIsolatedInputComponents();
 
         // Initialize health system
         if (healthSystem != null)
         {
             healthSystem.PlayerIndex = PlayerIndex;
+        }
+    }
+
+    void CheckForIsolatedInputComponents()
+    {
+        // Check for isolated input injector (highest priority)
+        inputInjector = GetComponent<FlexibleInputInjector>();
+        if (inputInjector != null)
+        {
+            hasIsolatedInput = true;
+            Debug.Log($"🗡️ Melee Player {PlayerIndex} - ISOLATED INPUT ACTIVE ({inputInjector.GetCurrentInputMethod()})");
+            return;
+        }
+
+        // Check for simple flexible input (medium priority)
+        flexInput = GetComponent<SimpleFlexibleInput>();
+        if (flexInput != null)
+        {
+            Debug.Log($"🗡️ Melee Player {PlayerIndex} - FLEXIBLE INPUT ACTIVE");
+            return;
+        }
+
+        // Fallback to original device system (lowest priority)
+        deviceInfo = GetComponent<PlayerDeviceInfo>();
+        if (deviceInfo != null)
+        {
+            assignedDevice = deviceInfo.AssignedDevice;
+            PlayerIndex = deviceInfo.PlayerIndex;
+            Debug.Log($"🗡️ Melee Player {PlayerIndex} - DEVICE INPUT: {assignedDevice?.name}");
         }
     }
 
@@ -166,35 +182,79 @@ public class Player_Melee_Controller1 : MonoBehaviour
         // Reset input states
         jumpPressed = dashPressed = guardPressed = attackPressed = false;
 
-        // Priority 1: Flexible input injector
-        if (flexInjector != null)
+        // DYNAMIC DETECTION: Re-check for isolated input components if not found yet
+        if (!hasIsolatedInput && inputInjector == null)
         {
-            moveInput = flexInjector.GetMoveInput();
-            aimDirection = flexInjector.GetAimInput();
-            jumpPressed = flexInjector.GetJumpPressed();
-            dashPressed = flexInjector.GetAction2Pressed();
-            guardPressed = flexInjector.GetAction1Pressed();
-            attackPressed = flexInjector.GetAction1Pressed();
+            CheckForIsolatedInputComponents();
+        }
+
+        // PRIORITY 1: Use isolated input injector
+        if (hasIsolatedInput && inputInjector != null)
+        {
+            HandleIsolatedInput();
             return;
         }
 
-        // Priority 2: Simple flexible input
+        // PRIORITY 2: Use simple flexible input
         if (flexInput != null)
         {
-            moveInput = flexInput.moveInput;
-            aimDirection = flexInput.aimInput;
-            jumpPressed = flexInput.jumpPressed;
-            dashPressed = flexInput.action2Pressed;
-            guardPressed = flexInput.action1Pressed;
-            attackPressed = flexInput.action1Pressed;
+            HandleFlexibleInput();
             return;
         }
 
-        // Fallback: Direct input handling
-        HandleDirectInput();
+        // FALLBACK: Original input handling
+        HandleFallbackInput();
     }
 
-    void HandleDirectInput()
+    void HandleIsolatedInput()
+    {
+        // Get completely isolated input for this player
+        moveInput = inputInjector.GetMoveInput();
+        aimDirection = inputInjector.GetAimInput();
+
+        // Map isolated input to melee actions
+        jumpPressed = inputInjector.GetJumpPressed();
+        guardPressed = inputInjector.GetAction1Pressed();  // Action1 = Guard
+        dashPressed = inputInjector.GetAction2Pressed();   // Action2 = Regular Dash
+        attackPressed = inputInjector.GetAction1Pressed(); // Action1 also triggers Genji Slash
+
+        // Ensure aim direction is valid
+        if (aimDirection.magnitude < 0.1f && moveInput.magnitude > 0.1f)
+        {
+            aimDirection = moveInput;
+        }
+        else if (aimDirection.magnitude < 0.1f)
+        {
+            aimDirection = Vector2.right; // Default facing direction
+        }
+
+        // Debug: Show input activity
+        if (moveInput.magnitude > 0.1f || guardPressed || dashPressed || attackPressed || jumpPressed)
+        {
+            Debug.Log($"🗡️ Melee P{PlayerIndex} ({inputInjector.GetCurrentInputMethod()}): Move={moveInput:F1}, Guard={guardPressed}, Dash={dashPressed}, Attack={attackPressed}");
+        }
+    }
+
+    void HandleFlexibleInput()
+    {
+        moveInput = flexInput.moveInput;
+        aimDirection = flexInput.aimInput;
+        jumpPressed = flexInput.jumpPressed;
+        guardPressed = flexInput.action1Pressed;
+        dashPressed = flexInput.action2Pressed;
+        attackPressed = flexInput.action1Pressed;
+
+        if (aimDirection.magnitude < 0.1f && moveInput.magnitude > 0.1f)
+        {
+            aimDirection = moveInput;
+        }
+        else if (aimDirection.magnitude < 0.1f)
+        {
+            aimDirection = Vector2.right;
+        }
+    }
+
+    void HandleFallbackInput()
     {
         if (assignedDevice is Gamepad gamepad)
         {
@@ -223,10 +283,8 @@ public class Player_Melee_Controller1 : MonoBehaviour
         // Buttons
         jumpPressed = gamepad.buttonSouth.wasPressedThisFrame; // A button
         dashPressed = gamepad.buttonEast.wasPressedThisFrame;  // B button (regular dash)
-
-        // SWAPPED CONTROLS:
-        guardPressed = gamepad.buttonNorth.wasPressedThisFrame;  // Y button (Triangle) - GUARD
-        attackPressed = gamepad.buttonWest.wasPressedThisFrame; // X button (Square) - GENJI SLASH
+        guardPressed = gamepad.buttonNorth.wasPressedThisFrame;  // Y button - GUARD
+        attackPressed = gamepad.buttonWest.wasPressedThisFrame; // X button - GENJI SLASH
     }
 
     void HandleKeyboardInput()
@@ -235,9 +293,10 @@ public class Player_Melee_Controller1 : MonoBehaviour
 
         Vector2 keyboardMove = Vector2.zero;
 
+        // Player-specific keyboard controls
         if (PlayerIndex == 0)
         {
-            // Player 1 - WASD
+            // Player 0: WASD + Space/Ctrl/Shift/F
             if (keyboard.aKey.isPressed) keyboardMove.x -= 1;
             if (keyboard.dKey.isPressed) keyboardMove.x += 1;
             if (keyboard.wKey.isPressed) keyboardMove.y += 1;
@@ -248,9 +307,9 @@ public class Player_Melee_Controller1 : MonoBehaviour
             guardPressed = keyboard.leftCtrlKey.wasPressedThisFrame;
             attackPressed = keyboard.fKey.wasPressedThisFrame;
         }
-        else
+        else if (PlayerIndex == 1)
         {
-            // Player 2 - Arrow keys
+            // Player 1: Arrow Keys + Enter/RCtrl/RShift/Numpad0
             if (keyboard.leftArrowKey.isPressed) keyboardMove.x -= 1;
             if (keyboard.rightArrowKey.isPressed) keyboardMove.x += 1;
             if (keyboard.upArrowKey.isPressed) keyboardMove.y += 1;
@@ -647,6 +706,19 @@ public class Player_Melee_Controller1 : MonoBehaviour
     public bool IsDashSlashing() => isDashSlashing;
     public PlayerHealthSystem GetHealthSystem() => healthSystem;
 
+    // Debug info
+    void OnGUI()
+    {
+        if (Application.isEditor && hasIsolatedInput)
+        {
+            float yOffset = PlayerIndex * 25 + 450;
+
+            string inputInfo = inputInjector != null ? inputInjector.GetCurrentInputMethod() : "Unknown";
+            GUI.Label(new Rect(10, yOffset, 300, 20),
+                $"Melee P{PlayerIndex}: {inputInfo} | Move: {moveInput:F1}");
+        }
+    }
+
     // Debug visualization
     void OnDrawGizmosSelected()
     {
@@ -672,6 +744,13 @@ public class Player_Melee_Controller1 : MonoBehaviour
         {
             Gizmos.color = Color.blue;
             Gizmos.DrawWireCube(guardSpawnPoint.position, Vector3.one * 0.3f);
+        }
+
+        // Input status
+        if (hasIsolatedInput)
+        {
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireCube(transform.position + Vector3.up * 3f, Vector3.one * 0.3f);
         }
 
         // Cooldown indicators

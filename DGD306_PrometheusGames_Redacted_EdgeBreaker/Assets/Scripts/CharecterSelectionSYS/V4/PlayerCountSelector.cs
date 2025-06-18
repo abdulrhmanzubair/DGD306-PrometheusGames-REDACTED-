@@ -179,7 +179,7 @@ public class PlayerCountSelector : MonoBehaviour
         // Update instruction text
         if (instructionText != null)
         {
-            instructionText.text = "Choose number of players:\nUse A/D or ← → to select, SPACE/ENTER or A button to confirm";
+            instructionText.text = "Choose number of players:";
         }
 
         // Update selected count display

@@ -44,6 +44,7 @@ GameObject:
   - component: {fileID: 3465493482130948995}
   - component: {fileID: 2320859166515079281}
   - component: {fileID: 2193329893569681788}
+  - component: {fileID: 2275727437661500908}
   m_Layer: 0
   m_Name: CANON_0
   m_TagString: Untagged
@@ -170,8 +171,14 @@ MonoBehaviour:
   firePoint: {fileID: 7169578081825615085}
   shootCooldown: 0.5
   bulletSpeed: 22
-  health: 60
   scoreValue: 50
+  shootSound: {fileID: 0}
+  detectSound: {fileID: 0}
+  footstepSounds: []
+  shootVolume: 0.6
+  detectVolume: 0.5
+  footstepVolume: 0.3
+  footstepInterval: 0.5
   deathSpritePrefab: {fileID: 250512183819968774, guid: e4c516f321f0deb4a9e5af67ec879a56, type: 3}
   deathSpriteLifetime: 0.3
 --- !u!70 &2193329893569681788
@@ -211,3 +218,49 @@ CapsuleCollider2D:
   m_Offset: {x: -0.0077861757, y: 0.17907752}
   m_Size: {x: 0.64841473, y: 4.021847}
   m_Direction: 0
+--- !u!114 &2275727437661500908
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8284395439696382048}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0742d3b29382df54199f168f10295d15, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHealth: 100
+  currentHealth: 0
+  scoreValue: 50
+  canTakeDamage: 1
+  enemyType: 0
+  enemyName: Harpoon
+  healthUICanvas: {fileID: 0}
+  healthBar: {fileID: 0}
+  healthText: {fileID: 0}
+  healthBarFill: {fileID: 0}
+  healthyColor: {r: 0, g: 1, b: 0, a: 1}
+  damagedColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  criticalColor: {r: 1, g: 0, b: 0, a: 1}
+  showHealthBar: 1
+  hideWhenFullHealth: 0
+  autoPositionAboveSprite: 1
+  additionalHeightOffset: 0.3
+  manualHealthBarOffset: {x: 0, y: 2, z: 0}
+  enemySprite: {fileID: 8834912893983082060}
+  damageFlashColor: {r: 1, g: 0, b: 0, a: 1}
+  flashDuration: 0.1
+  damageTextPrefab: {fileID: 0}
+  damageTextSpawnPoint: {fileID: 0}
+  hurtSounds: []
+  deathSounds: []
+  hurtVolume: 0.7
+  deathVolume: 0.8
+  deathEffectPrefab: {fileID: 250512183819968774, guid: e4c516f321f0deb4a9e5af67ec879a56, type: 3}
+  deathEffectLifetime: 2
+  dropItems: 0
+  possibleDrops: []
+  dropChance: 0.3
+  canBeKnockedBack: 1
+  knockbackResistance: 1

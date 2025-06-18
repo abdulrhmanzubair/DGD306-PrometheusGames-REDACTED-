@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6211346101098970626}
   - component: {fileID: 1744405404024666964}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: Light 2D
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -98,9 +98,9 @@ GameObject:
   - component: {fileID: 5052745557951283606}
   - component: {fileID: 8994150321829287746}
   - component: {fileID: 4331415851757495264}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: Grenade_enemy
-  m_TagString: Untagged
+  m_TagString: EnemyProjectile
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -251,15 +251,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f126d9332d8ead34ea19342653d768ed, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  explosionRadius: 14
-  explosionDamage: 25
-  fuseTime: 1.3
+  explosionRadius: 10.8
+  explosionDamage: 60
+  explosionForce: 15
   damageableLayers:
     serializedVersion: 2
     m_Bits: 128
+  fuseTime: 1.3
   explosionEffectPrefab: {fileID: 1780990898665742232, guid: 9cdceca07fa85c64f8c471404900dad8, type: 3}
-  explosionEffectDuration: 0.3
   explosionSound: {fileID: 8300000, guid: f17da19450c347a4e95db4530f935606, type: 3}
+  explosionVolume: 1
 --- !u!114 &4331415851757495264
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -5,6 +5,8 @@ using System.Collections;
 /// <summary>
 /// Universal health system for all enemy types
 /// Can be attached to any enemy GameObject regardless of AI type
+/// Enhanced with improved health bar positioning above enemy heads
+/// Modified for large sprites (423x463)
 /// </summary>
 public class UniversalEnemyHealth : MonoBehaviour, IDamageable
 {
@@ -26,9 +28,23 @@ public class UniversalEnemyHealth : MonoBehaviour, IDamageable
     public Color healthyColor = Color.green;
     public Color damagedColor = Color.yellow;
     public Color criticalColor = Color.red;
-    public Vector3 healthBarOffset = new Vector3(0, 1.5f, 0);
     public bool showHealthBar = true;
     public bool hideWhenFullHealth = false;
+
+    [Header("Health Bar Sizing")]
+    [Tooltip("Base scale factor for health UI. Adjust this if health bar is too big/small")]
+    public float healthBarScaleFactor = 1f;
+    [Tooltip("Width of the health bar in world units")]
+    public float healthBarWidth = 200f;
+    [Tooltip("Height of the health bar in world units")]
+    public float healthBarHeight = 25f;
+    [Tooltip("Font size for health text")]
+    public int healthTextFontSize = 14;
+
+    [Header("Health Bar Positioning")]
+    public bool autoPositionAboveSprite = true;
+    public float additionalHeightOffset = 0.5f; // Extra space above the sprite
+    public Vector3 manualHealthBarOffset = new Vector3(0, 2.5f, 0); // Used when autoPositionAboveSprite is false
 
     [Header("Damage Visual Effects")]
     public SpriteRenderer enemySprite;
@@ -60,6 +76,7 @@ public class UniversalEnemyHealth : MonoBehaviour, IDamageable
     private Color originalSpriteColor;
     private Rigidbody2D rb;
     private Camera playerCamera;
+    private float baseCanvasScale = 0.01f; // Base scale for large sprites
 
     // Events
     public event System.Action<int, int> OnHealthChanged; // (currentHealth, maxHealth)
@@ -86,17 +103,17 @@ public class UniversalEnemyHealth : MonoBehaviour, IDamageable
         rb = GetComponent<Rigidbody2D>();
         playerCamera = Camera.main;
 
-        // Detect AI type
+        // Detect AI type and get score from them
         DetectAIType();
 
-        // Set up audio
+        // Set up audio (but don't override if EnemyAI already has one configured)
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null)
         {
             audioSource = gameObject.AddComponent<AudioSource>();
+            audioSource.playOnAwake = false;
+            audioSource.spatialBlend = 0.7f;
         }
-        audioSource.playOnAwake = false;
-        audioSource.spatialBlend = 0.7f;
 
         // Store original sprite color
         if (enemySprite == null)
@@ -151,10 +168,11 @@ public class UniversalEnemyHealth : MonoBehaviour, IDamageable
             CreateHealthUI();
         }
 
-        // Position health bar
+        // Position health bar using new positioning logic
         if (healthUICanvas != null)
         {
-            healthUICanvas.transform.position = transform.position + healthBarOffset;
+            Vector3 healthBarPosition = GetHealthBarPosition();
+            healthUICanvas.transform.position = healthBarPosition;
             healthUICanvas.transform.SetParent(transform); // Make it follow the enemy
         }
 
@@ -172,20 +190,41 @@ public class UniversalEnemyHealth : MonoBehaviour, IDamageable
         healthUICanvas.renderMode = RenderMode.WorldSpace;
         healthUICanvas.worldCamera = playerCamera;
 
-        // Scale the canvas
-        healthUICanvas.transform.localScale = Vector3.one * 0.01f;
+        // Calculate appropriate scale for large sprites
+        float enemyScale = GetEnemyScale();
+
+        // For large sprites like 423x463, we need a different scaling approach
+        // Assuming pixels to units ratio of 100 (default), your sprite is about 4.23 x 4.63 units
+        // We'll use a fixed scale that works well for large sprites
+        float scaleFactor = baseCanvasScale * healthBarScaleFactor;
+
+        // If sprite is particularly large, scale down the UI accordingly
+        if (enemySprite != null)
+        {
+            float spritePixelHeight = 463f; // Your sprite height in pixels
+            float pixelsPerUnit = enemySprite.sprite != null ? enemySprite.sprite.pixelsPerUnit : 100f;
+            float spriteWorldHeight = spritePixelHeight / pixelsPerUnit;
+
+            // Adjust scale based on sprite world size
+            if (spriteWorldHeight > 3f)
+            {
+                scaleFactor *= (3f / spriteWorldHeight);
+            }
+        }
+
+        healthUICanvas.transform.localScale = Vector3.one * scaleFactor;
 
         // Add CanvasScaler for consistent sizing
         CanvasScaler scaler = canvasGO.AddComponent<CanvasScaler>();
         scaler.dynamicPixelsPerUnit = 10f;
 
-        // Create background
+        // Create background with rounded corners (optional)
         GameObject bgGO = new GameObject("HealthBar_Background");
         bgGO.transform.SetParent(canvasGO.transform);
         Image bgImage = bgGO.AddComponent<Image>();
-        bgImage.color = Color.black;
+        bgImage.color = new Color(0, 0, 0, 0); // Semi-transparent black
         RectTransform bgRect = bgGO.GetComponent<RectTransform>();
-        bgRect.sizeDelta = new Vector2(100, 10);
+        bgRect.sizeDelta = new Vector2(healthBarWidth * 1.1f, healthBarHeight * 1.2f); // Slightly larger than health bar
         bgRect.anchoredPosition = Vector2.zero;
 
         // Create health bar
@@ -194,7 +233,7 @@ public class UniversalEnemyHealth : MonoBehaviour, IDamageable
         healthBar = sliderGO.AddComponent<Slider>();
 
         RectTransform sliderRect = sliderGO.GetComponent<RectTransform>();
-        sliderRect.sizeDelta = new Vector2(100, 10);
+        sliderRect.sizeDelta = new Vector2(healthBarWidth, healthBarHeight);
         sliderRect.anchoredPosition = Vector2.zero;
 
         // Create fill area
@@ -203,7 +242,7 @@ public class UniversalEnemyHealth : MonoBehaviour, IDamageable
         RectTransform fillAreaRect = fillAreaGO.AddComponent<RectTransform>();
         fillAreaRect.anchorMin = Vector2.zero;
         fillAreaRect.anchorMax = Vector2.one;
-        fillAreaRect.sizeDelta = Vector2.zero;
+        fillAreaRect.sizeDelta = new Vector2(-5, -5); // Small padding
         fillAreaRect.anchoredPosition = Vector2.zero;
 
         // Create fill
@@ -222,6 +261,34 @@ public class UniversalEnemyHealth : MonoBehaviour, IDamageable
         healthBar.value = 1f;
         healthBar.minValue = 0f;
         healthBar.maxValue = 1f;
+
+        // Optional: Add health text
+        if (healthText == null)
+        {
+            CreateHealthText(canvasGO);
+        }
+    }
+
+    void CreateHealthText(GameObject canvasGO)
+    {
+        GameObject textGO = new GameObject("HealthText");
+        textGO.transform.SetParent(canvasGO.transform);
+
+        healthText = textGO.AddComponent<Text>();
+        healthText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        healthText.fontSize = healthTextFontSize;
+        healthText.color = Color.white;
+        healthText.alignment = TextAnchor.MiddleCenter;
+        healthText.text = $"{currentHealth}/{maxHealth}";
+
+        // Add outline for better visibility
+        Outline outline = textGO.AddComponent<Outline>();
+        outline.effectColor = Color.black;
+        outline.effectDistance = new Vector2(1, -1);
+
+        RectTransform textRect = textGO.GetComponent<RectTransform>();
+        textRect.sizeDelta = new Vector2(healthBarWidth, healthBarHeight);
+        textRect.anchoredPosition = Vector2.zero;
     }
 
     void Update()
@@ -229,8 +296,9 @@ public class UniversalEnemyHealth : MonoBehaviour, IDamageable
         // Update health bar position and rotation
         if (healthUICanvas != null && playerCamera != null)
         {
-            // Position health bar above enemy
-            healthUICanvas.transform.position = transform.position + healthBarOffset;
+            // Calculate position above enemy's head
+            Vector3 healthBarPosition = GetHealthBarPosition();
+            healthUICanvas.transform.position = healthBarPosition;
 
             // Make health bar face camera
             healthUICanvas.transform.LookAt(playerCamera.transform);
@@ -245,6 +313,58 @@ public class UniversalEnemyHealth : MonoBehaviour, IDamageable
             {
                 healthUICanvas.gameObject.SetActive(true);
             }
+        }
+    }
+
+    Vector3 GetHealthBarPosition()
+    {
+        if (autoPositionAboveSprite && enemySprite != null)
+        {
+            // Get the sprite bounds to position above the actual sprite
+            Bounds spriteBounds = enemySprite.bounds;
+            float spriteTop = spriteBounds.max.y;
+
+            // For large sprites, we might need more offset
+            float dynamicOffset = additionalHeightOffset;
+
+            // Add extra offset for very tall sprites
+            if (enemySprite.sprite != null)
+            {
+                float spriteHeight = enemySprite.sprite.bounds.size.y;
+                if (spriteHeight > 4f) // If sprite is taller than 4 units
+                {
+                    dynamicOffset += (spriteHeight - 4f) * 0.1f;
+                }
+            }
+
+            // Position health bar above the sprite with additional offset
+            return new Vector3(transform.position.x, spriteTop + dynamicOffset, transform.position.z);
+        }
+        else
+        {
+            // Use manual offset
+            return transform.position + manualHealthBarOffset;
+        }
+    }
+
+    float GetEnemyScale()
+    {
+        // Calculate enemy scale based on sprite or transform
+        if (enemySprite != null && enemySprite.sprite != null)
+        {
+            // Get actual sprite size in world units
+            float pixelsPerUnit = enemySprite.sprite.pixelsPerUnit;
+            float worldWidth = 423f / pixelsPerUnit;
+            float worldHeight = 463f / pixelsPerUnit;
+            return Mathf.Max(worldWidth, worldHeight);
+        }
+        else if (enemySprite != null)
+        {
+            return Mathf.Max(enemySprite.bounds.size.x, enemySprite.bounds.size.y);
+        }
+        else
+        {
+            return Mathf.Max(transform.localScale.x, transform.localScale.y);
         }
     }
 
@@ -266,8 +386,16 @@ public class UniversalEnemyHealth : MonoBehaviour, IDamageable
         OnDamageTaken?.Invoke(amount);
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
 
-        // Play hurt sound
-        PlayHurtSound();
+        // Play hurt sound (prioritize EnemyAI sounds if available)
+        EnemyAI enemyAI = GetComponent<EnemyAI>();
+        if (enemyAI != null && enemyAI.GetComponent<AudioSource>() != null)
+        {
+            // EnemyAI will handle its own hurt sounds through its audio system
+        }
+        else
+        {
+            PlayHurtSound();
+        }
 
         // Visual feedback
         StartCoroutine(DamageFlash());
@@ -301,14 +429,22 @@ public class UniversalEnemyHealth : MonoBehaviour, IDamageable
         isDead = true;
         Debug.Log($"{enemyName} died!");
 
-        // Play death sound
-        PlayDeathSound();
+        // Play death sound (prioritize EnemyAI sounds)
+        EnemyAI enemyAI = GetComponent<EnemyAI>();
+        if (enemyAI != null)
+        {
+            // Let EnemyAI handle its own death audio and effects
+        }
+        else
+        {
+            PlayDeathSound();
+        }
 
         // Trigger death event
         OnEnemyDeath?.Invoke(this);
 
-        // Add score
-        if (ScoreManagerV2.instance != null)
+        // Add score (avoid duplicate scoring if EnemyAI already handles it)
+        if (enemyAI == null && ScoreManagerV2.instance != null)
         {
             ScoreManagerV2.instance.AddPoints(scoreValue);
         }
@@ -319,11 +455,14 @@ public class UniversalEnemyHealth : MonoBehaviour, IDamageable
             rb.linearVelocity = Vector2.zero;
         }
 
-        // Disable AI components
-        DisableAI();
+        // Disable AI components (let them handle their own death sequence)
+        if (enemyAI == null)
+        {
+            DisableAI();
+        }
 
-        // Spawn death effect
-        if (deathEffectPrefab != null)
+        // Spawn death effect (only if EnemyAI doesn't have its own)
+        if (enemyAI == null && deathEffectPrefab != null)
         {
             GameObject deathEffect = Instantiate(deathEffectPrefab, transform.position, Quaternion.identity);
             Destroy(deathEffect, deathEffectLifetime);
@@ -341,8 +480,28 @@ public class UniversalEnemyHealth : MonoBehaviour, IDamageable
             healthUICanvas.gameObject.SetActive(false);
         }
 
-        // Start death sequence
-        StartCoroutine(DeathSequence());
+        // Start death sequence (only if no EnemyAI to handle it)
+        if (enemyAI == null)
+        {
+            StartCoroutine(DeathSequence());
+        }
+        else
+        {
+            // Delay destruction to let EnemyAI handle its death sequence
+            StartCoroutine(DelayedDestruction());
+        }
+    }
+
+    IEnumerator DelayedDestruction()
+    {
+        // Wait for EnemyAI death sequence to complete
+        yield return new WaitForSeconds(3f);
+
+        // Destroy the enemy if it still exists
+        if (gameObject != null)
+        {
+            Destroy(gameObject);
+        }
     }
 
     void DisableAI()
@@ -356,6 +515,13 @@ public class UniversalEnemyHealth : MonoBehaviour, IDamageable
         if (optimizedAI != null)
         {
             optimizedAI.enabled = false;
+        }
+
+        // Disable the new EnemyAI component
+        EnemyAI enemyAI = GetComponent<EnemyAI>();
+        if (enemyAI != null)
+        {
+            enemyAI.enabled = false;
         }
 
         // Disable collider to prevent further damage
@@ -521,6 +687,18 @@ public class UniversalEnemyHealth : MonoBehaviour, IDamageable
         }
     }
 
+    // Methods for custom positioning
+    public void SetHealthBarOffset(float heightOffset)
+    {
+        additionalHeightOffset = heightOffset;
+    }
+
+    public void SetManualHealthBarPosition(Vector3 offset)
+    {
+        autoPositionAboveSprite = false;
+        manualHealthBarOffset = offset;
+    }
+
     // Reset method for object pooling
     public void ResetEnemy()
     {
@@ -543,6 +721,14 @@ public class UniversalEnemyHealth : MonoBehaviour, IDamageable
         if (optimizedAI != null)
         {
             optimizedAI.enabled = true;
+        }
+
+        // Re-enable the new EnemyAI component
+        EnemyAI enemyAI = GetComponent<EnemyAI>();
+        if (enemyAI != null)
+        {
+            enemyAI.enabled = true;
+            enemyAI.ResetEnemy(); // Call its own reset method
         }
 
         // Re-enable collider
@@ -576,8 +762,13 @@ public class UniversalEnemyHealth : MonoBehaviour, IDamageable
         }
 
         // Draw health bar position
+        Vector3 healthBarPos = GetHealthBarPosition();
         Gizmos.color = Color.blue;
-        Gizmos.DrawWireCube(transform.position + healthBarOffset, Vector3.one * 0.2f);
+        Gizmos.DrawWireCube(healthBarPos, Vector3.one * 0.2f);
+
+        // Draw line from enemy to health bar position
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawLine(transform.position, healthBarPos);
     }
 }
 

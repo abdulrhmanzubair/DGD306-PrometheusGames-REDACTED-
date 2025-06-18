@@ -1,20 +1,13 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
 /// <summary>
-/// Enhanced player controller (Gunner) with proper damage receiving
+/// Enhanced player controller (Gunner) optimized for isolated input system
+/// Each player gets completely independent gamepad + keyboard controls
 /// </summary>
 public class PlayerController : MonoBehaviour
 {
     public int PlayerIndex { get; set; }
-
-    // FLEXIBLE INPUT INTEGRATION
-    private FlexibleInputInjector flexInjector;
-    private SimpleFlexibleInput flexInput;
-
-    // Original components
-    private PlayerDeviceInfo deviceInfo;
-    private InputDevice assignedDevice;
 
     [Header("Movement")]
     public float moveSpeed = 5f;
@@ -48,6 +41,7 @@ public class PlayerController : MonoBehaviour
     [Range(0f, 1f)] public float shootVolume = 0.6f;
     [Range(0f, 1f)] public float grenadeVolume = 0.5f;
 
+    // Core components
     private Rigidbody2D rb;
     private Animator animator;
     private AudioSource audioSource;
@@ -55,6 +49,10 @@ public class PlayerController : MonoBehaviour
     private bool isGrounded;
     private float nextFireTime;
     private float nextGrenadeTime;
+
+    // ISOLATED INPUT SYSTEM
+    private FlexibleInputInjector inputInjector;
+    private bool hasIsolatedInput = false;
 
     // Input states
     private Vector2 moveInput;
@@ -64,6 +62,10 @@ public class PlayerController : MonoBehaviour
     private bool fire1Pressed;
     private bool fire2Pressed;
 
+    // Fallback input (only used if isolated system fails)
+    private SimpleFlexibleInput flexInput;
+    private PlayerDeviceInfo deviceInfo;
+    private InputDevice assignedDevice;
     private Keyboard keyboard;
 
     void Awake()
@@ -92,25 +94,8 @@ public class PlayerController : MonoBehaviour
 
     void Start()
     {
-        // Check for flexible input components (added by AutoFlexibleInputSetup)
-        flexInjector = GetComponent<FlexibleInputInjector>();
-        flexInput = GetComponent<SimpleFlexibleInput>();
-
-        if (flexInjector != null || flexInput != null)
-        {
-            Debug.Log($"GunnerController - FLEXIBLE INPUT ACTIVE for Player {PlayerIndex}");
-        }
-        else
-        {
-            // Fallback to original device system
-            deviceInfo = GetComponent<PlayerDeviceInfo>();
-            if (deviceInfo != null)
-            {
-                assignedDevice = deviceInfo.AssignedDevice;
-                PlayerIndex = deviceInfo.PlayerIndex;
-                Debug.Log($"GunnerController - Device: {assignedDevice?.name}, PlayerIndex: {PlayerIndex}");
-            }
-        }
+        // PRIORITY: Always check for isolated input components first (they may be added later)
+        CheckForIsolatedInputComponents();
 
         if (groundCheck == null)
         {
@@ -121,6 +106,35 @@ public class PlayerController : MonoBehaviour
         if (healthSystem != null)
         {
             healthSystem.PlayerIndex = PlayerIndex;
+        }
+    }
+
+    void CheckForIsolatedInputComponents()
+    {
+        // Check for isolated input injector (highest priority)
+        inputInjector = GetComponent<FlexibleInputInjector>();
+        if (inputInjector != null)
+        {
+            hasIsolatedInput = true;
+            Debug.Log($"🎮 Gunner Player {PlayerIndex} - ISOLATED INPUT ACTIVE ({inputInjector.GetCurrentInputMethod()})");
+            return;
+        }
+
+        // Check for simple flexible input (medium priority)
+        flexInput = GetComponent<SimpleFlexibleInput>();
+        if (flexInput != null)
+        {
+            Debug.Log($"🎮 Gunner Player {PlayerIndex} - FLEXIBLE INPUT ACTIVE");
+            return;
+        }
+
+        // Fallback to original device system (lowest priority)
+        deviceInfo = GetComponent<PlayerDeviceInfo>();
+        if (deviceInfo != null)
+        {
+            assignedDevice = deviceInfo.AssignedDevice;
+            PlayerIndex = deviceInfo.PlayerIndex;
+            Debug.Log($"🎮 Gunner Player {PlayerIndex} - DEVICE INPUT: {assignedDevice?.name}");
         }
     }
 
@@ -142,51 +156,95 @@ public class PlayerController : MonoBehaviour
 
     void HandleInput()
     {
-        // PRIORITY 1: Check for flexible input
-        if (flexInjector != null)
+        // Reset input states
+        jumpRequested = false;
+        fire1Pressed = false;
+        fire2Pressed = false;
+
+        // DYNAMIC DETECTION: Re-check for isolated input components if not found yet
+        if (!hasIsolatedInput && inputInjector == null)
         {
-            moveInput = flexInjector.GetMoveInput();
-            aimInput = flexInjector.GetAimInput();
-
-            if (flexInjector.GetJumpPressed())
-            {
-                jumpPressed = true;
-                jumpRequested = true;
-            }
-            jumpPressed = flexInjector.GetJumpHeld();
-
-            fire1Pressed = flexInjector.GetAction1Pressed();
-            fire2Pressed = flexInjector.GetAction2Pressed();
-
-            return; // Use flexible input, skip original handling
+            CheckForIsolatedInputComponents();
         }
 
-        // PRIORITY 2: Check SimpleFlexibleInput
+        // PRIORITY 1: Use isolated input injector
+        if (hasIsolatedInput && inputInjector != null)
+        {
+            HandleIsolatedInput();
+            return;
+        }
+
+        // PRIORITY 2: Use simple flexible input
         if (flexInput != null)
         {
-            moveInput = flexInput.moveInput;
-            aimInput = flexInput.aimInput;
-
-            if (flexInput.jumpPressed)
-            {
-                jumpPressed = true;
-                jumpRequested = true;
-            }
-            jumpPressed = flexInput.jumpHeld;
-
-            fire1Pressed = flexInput.action1Pressed;
-            fire2Pressed = flexInput.action2Pressed;
-
-            return; // Use simple flexible input
+            HandleFlexibleInput();
+            return;
         }
 
         // FALLBACK: Original input handling
-        HandleOriginalInput();
+        HandleFallbackInput();
     }
 
-    void HandleOriginalInput()
+    void HandleIsolatedInput()
     {
-        // Your existing input handling code as fallback
+        // Get completely isolated input for this player
+        moveInput = inputInjector.GetMoveInput();
+        aimInput = inputInjector.GetAimInput();
+
+        // Handle jump
+        jumpPressed = inputInjector.GetJumpHeld();
+        if (inputInjector.GetJumpPressed())
+        {
+            jumpRequested = true;
+        }
+
+        // Handle shooting (Action1 = Fire, Action2 = Grenade)
+        fire1Pressed = inputInjector.GetAction1Pressed();
+        fire2Pressed = inputInjector.GetAction2Pressed();
+
+        // Ensure aim direction is valid
+        if (aimInput.magnitude < 0.1f && moveInput.magnitude > 0.1f)
+        {
+            aimInput = moveInput;
+        }
+        else if (aimInput.magnitude < 0.1f)
+        {
+            aimInput = Vector2.right; // Default facing direction
+        }
+
+        // Debug: Show input activity
+        if (moveInput.magnitude > 0.1f || fire1Pressed || fire2Pressed || jumpRequested)
+        {
+            Debug.Log($"🎮 Gunner P{PlayerIndex} ({inputInjector.GetCurrentInputMethod()}): Move={moveInput:F1}, Fire={fire1Pressed}, Jump={jumpRequested}");
+        }
+    }
+
+    void HandleFlexibleInput()
+    {
+        moveInput = flexInput.moveInput;
+        aimInput = flexInput.aimInput;
+
+        jumpPressed = flexInput.jumpHeld;
+        if (flexInput.jumpPressed)
+        {
+            jumpRequested = true;
+        }
+
+        fire1Pressed = flexInput.action1Pressed;
+        fire2Pressed = flexInput.action2Pressed;
+
+        if (aimInput.magnitude < 0.1f && moveInput.magnitude > 0.1f)
+        {
+            aimInput = moveInput;
+        }
+        else if (aimInput.magnitude < 0.1f)
+        {
+            aimInput = Vector2.right;
+        }
+    }
+
+    void HandleFallbackInput()
+    {
         if (assignedDevice is Gamepad gamepad)
         {
             HandleGamepadInput(gamepad);
@@ -209,23 +267,14 @@ public class PlayerController : MonoBehaviour
         else if (moveInput.magnitude > 0.1f)
             aimInput = moveInput;
 
+        jumpPressed = gamepad.buttonSouth.isPressed;
         if (gamepad.buttonSouth.wasPressedThisFrame)
         {
-            jumpPressed = true;
             jumpRequested = true;
         }
-        if (gamepad.buttonSouth.wasReleasedThisFrame)
-            jumpPressed = false;
 
-        if (gamepad.rightTrigger.wasPressedThisFrame || gamepad.buttonWest.wasPressedThisFrame)
-            fire1Pressed = true;
-        if (gamepad.rightTrigger.wasReleasedThisFrame || gamepad.buttonWest.wasReleasedThisFrame)
-            fire1Pressed = false;
-
-        if (gamepad.rightShoulder.wasPressedThisFrame || gamepad.buttonNorth.wasPressedThisFrame)
-            fire2Pressed = true;
-        if (gamepad.rightShoulder.wasReleasedThisFrame || gamepad.buttonNorth.wasReleasedThisFrame)
-            fire2Pressed = false;
+        fire1Pressed = gamepad.rightTrigger.wasPressedThisFrame || gamepad.buttonWest.wasPressedThisFrame;
+        fire2Pressed = gamepad.rightShoulder.wasPressedThisFrame || gamepad.buttonNorth.wasPressedThisFrame;
     }
 
     void HandleKeyboardInput()
@@ -234,56 +283,36 @@ public class PlayerController : MonoBehaviour
 
         Vector2 keyboardMove = Vector2.zero;
 
-        // Default to WASD for Player 0, Arrow Keys for Player 1
+        // Player-specific keyboard controls
         if (PlayerIndex == 0)
         {
+            // Player 0: WASD + Space/Ctrl/Shift
             if (keyboard.aKey.isPressed) keyboardMove.x -= 1;
             if (keyboard.dKey.isPressed) keyboardMove.x += 1;
             if (keyboard.wKey.isPressed) keyboardMove.y += 1;
             if (keyboard.sKey.isPressed) keyboardMove.y -= 1;
 
+            jumpPressed = keyboard.spaceKey.isPressed;
             if (keyboard.spaceKey.wasPressedThisFrame)
-            {
-                jumpPressed = true;
                 jumpRequested = true;
-            }
-            if (keyboard.spaceKey.wasReleasedThisFrame)
-                jumpPressed = false;
 
-            if (keyboard.leftCtrlKey.wasPressedThisFrame)
-                fire1Pressed = true;
-            if (keyboard.leftCtrlKey.wasReleasedThisFrame)
-                fire1Pressed = false;
-
-            if (keyboard.leftShiftKey.wasPressedThisFrame)
-                fire2Pressed = true;
-            if (keyboard.leftShiftKey.wasReleasedThisFrame)
-                fire2Pressed = false;
+            fire1Pressed = keyboard.leftCtrlKey.wasPressedThisFrame;
+            fire2Pressed = keyboard.leftShiftKey.wasPressedThisFrame;
         }
-        else
+        else if (PlayerIndex == 1)
         {
+            // Player 1: Arrow Keys + Enter/RCtrl/RShift
             if (keyboard.leftArrowKey.isPressed) keyboardMove.x -= 1;
             if (keyboard.rightArrowKey.isPressed) keyboardMove.x += 1;
             if (keyboard.upArrowKey.isPressed) keyboardMove.y += 1;
             if (keyboard.downArrowKey.isPressed) keyboardMove.y -= 1;
 
+            jumpPressed = keyboard.enterKey.isPressed;
             if (keyboard.enterKey.wasPressedThisFrame)
-            {
-                jumpPressed = true;
                 jumpRequested = true;
-            }
-            if (keyboard.enterKey.wasReleasedThisFrame)
-                jumpPressed = false;
 
-            if (keyboard.rightCtrlKey.wasPressedThisFrame)
-                fire1Pressed = true;
-            if (keyboard.rightCtrlKey.wasReleasedThisFrame)
-                fire1Pressed = false;
-
-            if (keyboard.rightShiftKey.wasPressedThisFrame)
-                fire2Pressed = true;
-            if (keyboard.rightShiftKey.wasReleasedThisFrame)
-                fire2Pressed = false;
+            fire1Pressed = keyboard.rightCtrlKey.wasPressedThisFrame;
+            fire2Pressed = keyboard.rightShiftKey.wasPressedThisFrame;
         }
 
         moveInput = keyboardMove;
@@ -329,11 +358,6 @@ public class PlayerController : MonoBehaviour
         if (jumpRequested && isGrounded)
         {
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
-            jumpRequested = false;
-        }
-        if (!isGrounded && jumpRequested)
-        {
-            jumpRequested = false;
         }
     }
 
@@ -351,6 +375,7 @@ public class PlayerController : MonoBehaviour
 
     void HandleShooting()
     {
+        // Primary fire (bullets)
         if (Time.time >= nextFireTime && fire1Pressed)
         {
             nextFireTime = Time.time + fireRate;
@@ -369,14 +394,13 @@ public class PlayerController : MonoBehaviour
                 bulletScript.SetDirection(GetAimDirection());
                 bulletScript.SetShooter("Player");
             }
-            fire1Pressed = false;
         }
 
+        // Secondary fire (grenades)
         if (Time.time >= nextGrenadeTime && fire2Pressed)
         {
             ThrowGrenade();
             nextGrenadeTime = Time.time + grenadeCooldown;
-            fire2Pressed = false;
         }
     }
 
@@ -398,7 +422,6 @@ public class PlayerController : MonoBehaviour
         if (grenadeScript != null)
         {
             grenadeScript.Launch(throwDirection, grenadeForce);
-            // grenadeScript.SetShooter("Player"); // Remove this line if Grenade doesn't have SetShooter
         }
         else
         {
@@ -464,13 +487,12 @@ public class PlayerController : MonoBehaviour
         {
             if (healthSystem != null)
             {
-                float contactDamage = 10f; // Default contact damage
+                float contactDamage = 10f;
 
                 // Try to get specific enemy damage
                 UniversalEnemyHealth enemyHealth = other.GetComponent<UniversalEnemyHealth>();
                 if (enemyHealth != null)
                 {
-                    // Could have contact damage property on enemy
                     contactDamage = 8f; // Basic enemy contact damage
                 }
 
@@ -487,8 +509,11 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    // Public methods
     public bool IsGrenadeReady() => Time.time >= nextGrenadeTime;
     public float GetGrenadeCooldownRemaining() => Mathf.Max(0f, nextGrenadeTime - Time.time);
+    public PlayerHealthSystem GetHealthSystem() => healthSystem;
+
     Vector2 GetAimDirection() => aimInput != Vector2.zero ? aimInput.normalized : (Vector2)transform.right;
 
     void UpdateAnimator()
@@ -508,12 +533,6 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // Public methods for external access
-    public PlayerHealthSystem GetHealthSystem()
-    {
-        return healthSystem;
-    }
-
     // Debug visualization
     void OnDrawGizmosSelected()
     {
@@ -530,6 +549,13 @@ public class PlayerController : MonoBehaviour
                 Gizmos.color = Color.yellow;
                 Gizmos.DrawWireSphere(transform.position, 1.5f);
             }
+        }
+
+        // Draw input status
+        if (hasIsolatedInput)
+        {
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireCube(transform.position + Vector3.up * 3f, Vector3.one * 0.3f);
         }
     }
 }

@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 477013269318214413}
   - component: {fileID: 5999253773341266200}
-  m_Layer: 8
+  m_Layer: 11
   m_Name: Light 2D
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -98,9 +98,9 @@ GameObject:
   - component: {fileID: 661206519874347414}
   - component: {fileID: -957760310780712008}
   - component: {fileID: 2534926644226548403}
-  m_Layer: 8
+  m_Layer: 11
   m_Name: Bullet_Enemy
-  m_TagString: Projectiles
+  m_TagString: EnemyProjectile
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

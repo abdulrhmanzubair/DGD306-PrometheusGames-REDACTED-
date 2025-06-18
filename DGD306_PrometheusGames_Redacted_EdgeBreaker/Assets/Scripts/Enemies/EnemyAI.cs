@@ -1,7 +1,11 @@
 using UnityEngine;
 using System.Collections;
 
-public class EnemyAI : MonoBehaviour, IDamageable
+/// <summary>
+/// Enemy AI script that works with UniversalEnemyHealth
+/// Handles movement, shooting, and behavior - health is managed by UniversalEnemyHealth
+/// </summary>
+public class EnemyAI : MonoBehaviour
 {
     [Header("References")]
     public Rigidbody2D rb;
@@ -23,23 +27,15 @@ public class EnemyAI : MonoBehaviour, IDamageable
     private float lastShootTime;
 
     [Header("Enemy Stats")]
-    public int health = 100;
-    public int maxHealth = 100; // Store original health
-    public int scoreValue = 50;
+    public int scoreValue = 50; // Only score - health is handled by UniversalEnemyHealth
 
     [Header("Audio Settings")]
     public AudioClip shootSound;        // Sound when enemy shoots
-    public AudioClip hurtSound;         // Sound when taking damage
-    public AudioClip deathSound;        // Sound when enemy dies
     public AudioClip detectSound;       // Sound when player is detected
     public AudioClip[] footstepSounds;  // Array of footstep sounds for variety
 
     [Range(0f, 1f)]
     public float shootVolume = 0.6f;
-    [Range(0f, 1f)]
-    public float hurtVolume = 0.7f;
-    [Range(0f, 1f)]
-    public float deathVolume = 0.8f;
     [Range(0f, 1f)]
     public float detectVolume = 0.5f;
     [Range(0f, 1f)]
@@ -62,6 +58,9 @@ public class EnemyAI : MonoBehaviour, IDamageable
     private Animator animator;
     private AudioSource audioSource;
 
+    // Reference to health system
+    private UniversalEnemyHealth healthSystem;
+
     private void Start()
     {
         Initialize();
@@ -71,8 +70,20 @@ public class EnemyAI : MonoBehaviour, IDamageable
     {
         animator = GetComponent<Animator>();
 
-        // Store max health
-        maxHealth = health;
+        // Get reference to health system
+        healthSystem = GetComponent<UniversalEnemyHealth>();
+        if (healthSystem == null)
+        {
+            Debug.LogError($"{gameObject.name} - EnemyAI requires UniversalEnemyHealth component!");
+            return;
+        }
+
+        // Subscribe to health system events
+        healthSystem.OnEnemyDeath += HandleDeath;
+
+        // Set score value in health system
+        healthSystem.scoreValue = scoreValue;
+
         isDead = false;
 
         // Set up audio source
@@ -88,12 +99,20 @@ public class EnemyAI : MonoBehaviour, IDamageable
         audioSource.volume = 1f; // Make sure volume is at max
         audioSource.enabled = true;
 
-        Debug.Log($"Enemy {gameObject.name} initialized - Health: {health}, Audio: {audioSource != null}");
+        Debug.Log($"Enemy {gameObject.name} initialized - Health: {healthSystem.currentHealth}, Audio: {audioSource != null}");
     }
 
     void Update()
     {
-        if (isDead) return; // Don't update if dead
+        // Check if dead through health system
+        if (healthSystem != null && !healthSystem.IsAlive())
+        {
+            if (!isDead)
+            {
+                isDead = true;
+            }
+            return; // Don't update if dead
+        }
 
         if (!hasTarget || currentTarget == null)
         {
@@ -148,6 +167,13 @@ public class EnemyAI : MonoBehaviour, IDamageable
 
         foreach (GameObject player in players)
         {
+            // Check if player is alive
+            PlayerHealthSystem playerHealth = player.GetComponent<PlayerHealthSystem>();
+            if (playerHealth != null && !playerHealth.IsAlive)
+            {
+                continue; // Skip dead players
+            }
+
             float dist = Vector2.Distance(transform.position, player.transform.position);
             if (dist <= detectionRadius && dist < closestDistance)
             {
@@ -207,35 +233,13 @@ public class EnemyAI : MonoBehaviour, IDamageable
         }
     }
 
-    public void TakeDamage(float amount)
-    {
-        if (isDead) return; // Don't take damage if already dead
-
-        Debug.Log($"{gameObject.name} took {amount} damage! Health: {health} -> {health - (int)amount}");
-
-        // Play hurt sound
-        PlayHurtSound();
-
-        health -= (int)amount;
-        health = Mathf.Max(health, 0); // Clamp to 0
-
-        Debug.Log($"{gameObject.name} health after damage: {health}");
-
-        if (health <= 0)
-        {
-            Die();
-        }
-    }
-
-    void Die()
+    // This method is called by UniversalEnemyHealth when the enemy dies
+    void HandleDeath(UniversalEnemyHealth deadEnemy)
     {
         if (isDead) return; // Prevent multiple death calls
 
         isDead = true;
         Debug.Log($"{gameObject.name} is dying!");
-
-        // Play death sound immediately
-        PlayDeathSound();
 
         // Stop all movement
         rb.linearVelocity = Vector2.zero;
@@ -243,13 +247,7 @@ public class EnemyAI : MonoBehaviour, IDamageable
         // Trigger death event
         OnEnemyDeath?.Invoke();
 
-        // Add score
-        if (ScoreManagerV2.instance != null)
-        {
-            ScoreManagerV2.instance.AddPoints(scoreValue);
-            Debug.Log($"Added {scoreValue} points for killing {gameObject.name}");
-        }
-
+        // Start death sequence (visual effects)
         StartCoroutine(DeathSequence());
     }
 
@@ -289,12 +287,11 @@ public class EnemyAI : MonoBehaviour, IDamageable
             Destroy(deathVisual);
         }
 
-        // Destroy the enemy
-        Destroy(gameObject);
+        // The enemy GameObject will be destroyed by UniversalEnemyHealth
     }
 
     // Audio Methods with debug logging
-    void PlayShootSound()
+    public void PlayShootSound()
     {
         if (shootSound != null && audioSource != null)
         {
@@ -307,33 +304,7 @@ public class EnemyAI : MonoBehaviour, IDamageable
         }
     }
 
-    void PlayHurtSound()
-    {
-        if (hurtSound != null && audioSource != null)
-        {
-            audioSource.PlayOneShot(hurtSound, hurtVolume);
-            Debug.Log($"{gameObject.name} played hurt sound");
-        }
-        else
-        {
-            Debug.LogWarning($"{gameObject.name} - Cannot play hurt sound: hurtSound={hurtSound}, audioSource={audioSource}");
-        }
-    }
-
-    void PlayDeathSound()
-    {
-        if (deathSound != null && audioSource != null)
-        {
-            audioSource.PlayOneShot(deathSound, deathVolume);
-            Debug.Log($"{gameObject.name} played death sound");
-        }
-        else
-        {
-            Debug.LogWarning($"{gameObject.name} - Cannot play death sound: deathSound={deathSound}, audioSource={audioSource}");
-        }
-    }
-
-    void PlayDetectSound()
+    public void PlayDetectSound()
     {
         if (detectSound != null && audioSource != null)
         {
@@ -372,16 +343,56 @@ public class EnemyAI : MonoBehaviour, IDamageable
 
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, stopDistance);
+
+        // Draw health status if health system exists
+        if (healthSystem != null)
+        {
+            float healthPercent = healthSystem.GetHealthPercentage();
+            Gizmos.color = Color.Lerp(Color.red, Color.green, healthPercent);
+            Gizmos.DrawWireCube(transform.position + Vector3.up, Vector3.one * 0.5f);
+        }
     }
 
     // Public method to reset enemy (useful for object pooling)
     public void ResetEnemy()
     {
-        health = maxHealth;
         isDead = false;
         hasDetectedBefore = false;
         hasTarget = false;
         currentTarget = null;
         rb.linearVelocity = Vector2.zero;
+
+        // Reset health system if it exists
+        if (healthSystem != null)
+        {
+            healthSystem.ResetEnemy();
+        }
+    }
+
+    // Public method to get current health (delegates to health system)
+    public int GetCurrentHealth()
+    {
+        return healthSystem != null ? healthSystem.currentHealth : 0;
+    }
+
+    // Public method to get max health (delegates to health system)
+    public int GetMaxHealth()
+    {
+        return healthSystem != null ? healthSystem.maxHealth : 0;
+    }
+
+    // Public method to check if alive (delegates to health system)
+    public bool IsAlive()
+    {
+        return healthSystem != null ? healthSystem.IsAlive() : false;
+    }
+
+    void OnDestroy()
+    {
+        // Unsubscribe from events to prevent memory leaks
+        if (healthSystem != null)
+        {
+            healthSystem.OnEnemyDeath -= HandleDeath;
+        }
     }
 }

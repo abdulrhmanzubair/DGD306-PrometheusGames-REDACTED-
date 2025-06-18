@@ -1,19 +1,21 @@
-﻿// SimpleFlexibleInput.cs - Main flexible input component
+﻿// SimpleFlexibleInput.cs - Completely isolated per-player input system
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Collections.Generic;
 
 /// <summary>
-/// Simple flexible input system that detects and switches between input methods in real-time
-/// This is the core component that handles all input detection and switching
+/// Completely isolated input system - each player gets their own gamepad + keyboard controls
+/// No sharing, no cross-contamination between players
 /// </summary>
 public class SimpleFlexibleInput : MonoBehaviour
 {
     [Header("Player Settings")]
     public int playerIndex = 0;
 
-    [Header("Real-time Input Detection")]
-    public bool enableRealTimeSwitching = true;
-    public float switchCooldown = 0.3f;
+    [Header("Input Settings")]
+    public bool enableGamepad = true;
+    public bool enableKeyboard = true;
+    public float inputDeadzone = 0.1f;
 
     // Public input state that controllers can read from
     [HideInInspector] public Vector2 moveInput;
@@ -26,11 +28,21 @@ public class SimpleFlexibleInput : MonoBehaviour
     [HideInInspector] public bool action2Held;
 
     // Current active input method
-    public string currentInputMethod = "auto";
+    public string currentInputMethod = "none";
 
+    // Static gamepad assignment tracking
+    private static Dictionary<int, int> gamepadAssignments = new Dictionary<int, int>(); // playerIndex -> gamepadIndex
+    private static List<int> availableGamepads = new List<int>();
+
+    // Per-player dedicated controls
+    private Gamepad assignedGamepad;
+    private int assignedGamepadIndex = -1;
     private Keyboard keyboard;
-    private float lastSwitchTime;
-    private Gamepad currentGamepad;
+
+    // Keyboard schemes per player
+    private Dictionary<string, Key[]> keyboardSchemes;
+
+    // Press detection
     private bool wasAction1PressedLastFrame;
     private bool wasAction2PressedLastFrame;
     private bool wasJumpPressedLastFrame;
@@ -39,56 +51,184 @@ public class SimpleFlexibleInput : MonoBehaviour
     {
         keyboard = Keyboard.current;
 
-        // Try to assign a gamepad
-        var gamepads = Gamepad.all;
-        if (gamepads.Count > playerIndex)
+        // Initialize keyboard schemes
+        InitializeKeyboardSchemes();
+
+        // Try to assign a gamepad to this player
+        AssignGamepadToPlayer();
+
+        // Set initial input method
+        if (assignedGamepad != null)
         {
-            currentGamepad = gamepads[playerIndex];
+            currentInputMethod = $"Gamepad{assignedGamepadIndex}";
+        }
+        else
+        {
+            currentInputMethod = GetKeyboardMethodName();
         }
 
-        Debug.Log($"SimpleFlexibleInput: Player {playerIndex} initialized with gamepad: {currentGamepad?.name ?? "None"}");
+        Debug.Log($"🎮 Player {playerIndex} initialized:");
+        Debug.Log($"   Gamepad: {assignedGamepad?.name ?? "None"}");
+        Debug.Log($"   Keyboard: {(keyboard != null ? "Available" : "None")}");
+        Debug.Log($"   Input Method: {currentInputMethod}");
+    }
+
+    void InitializeKeyboardSchemes()
+    {
+        keyboardSchemes = new Dictionary<string, Key[]>();
+
+        // Player 0: WASD + Space/Ctrl/Shift
+        if (playerIndex == 0)
+        {
+            keyboardSchemes["move"] = new Key[] { Key.A, Key.D, Key.W, Key.S }; // left, right, up, down
+            keyboardSchemes["jump"] = new Key[] { Key.Space };
+            keyboardSchemes["action1"] = new Key[] { Key.LeftCtrl };
+            keyboardSchemes["action2"] = new Key[] { Key.LeftShift };
+        }
+        // Player 1: Arrow Keys + Enter/RCtrl/RShift
+        else if (playerIndex == 1)
+        {
+            keyboardSchemes["move"] = new Key[] { Key.LeftArrow, Key.RightArrow, Key.UpArrow, Key.DownArrow };
+            keyboardSchemes["jump"] = new Key[] { Key.Enter };
+            keyboardSchemes["action1"] = new Key[] { Key.RightCtrl };
+            keyboardSchemes["action2"] = new Key[] { Key.RightShift };
+        }
+        // Player 2+: IJKL scheme
+        else
+        {
+            keyboardSchemes["move"] = new Key[] { Key.J, Key.L, Key.I, Key.K };
+            keyboardSchemes["jump"] = new Key[] { Key.H };
+            keyboardSchemes["action1"] = new Key[] { Key.N };
+            keyboardSchemes["action2"] = new Key[] { Key.M };
+        }
+    }
+
+    void AssignGamepadToPlayer()
+    {
+        // Update available gamepads list
+        RefreshAvailableGamepads();
+
+        // If this player already has a gamepad assigned, check if it's still connected
+        if (gamepadAssignments.ContainsKey(playerIndex))
+        {
+            int gamepadIndex = gamepadAssignments[playerIndex];
+            if (gamepadIndex < Gamepad.all.Count)
+            {
+                assignedGamepad = Gamepad.all[gamepadIndex];
+                assignedGamepadIndex = gamepadIndex;
+                Debug.Log($"Player {playerIndex} keeping assigned gamepad {gamepadIndex}: {assignedGamepad.name}");
+                return;
+            }
+            else
+            {
+                // Gamepad disconnected, remove assignment
+                gamepadAssignments.Remove(playerIndex);
+                assignedGamepad = null;
+                assignedGamepadIndex = -1;
+                Debug.Log($"Player {playerIndex} gamepad disconnected, falling back to keyboard");
+            }
+        }
+
+        // Try to assign an available gamepad
+        for (int i = 0; i < Gamepad.all.Count; i++)
+        {
+            if (availableGamepads.Contains(i))
+            {
+                // Assign this gamepad to this player
+                gamepadAssignments[playerIndex] = i;
+                availableGamepads.Remove(i);
+                assignedGamepad = Gamepad.all[i];
+                assignedGamepadIndex = i;
+                Debug.Log($"Player {playerIndex} assigned gamepad {i}: {assignedGamepad.name}");
+                return;
+            }
+        }
+
+        Debug.Log($"Player {playerIndex} no gamepad available, using keyboard: {GetKeyboardMethodName()}");
+    }
+
+    void RefreshAvailableGamepads()
+    {
+        availableGamepads.Clear();
+
+        // Add all gamepads that aren't assigned to any player
+        for (int i = 0; i < Gamepad.all.Count; i++)
+        {
+            bool isAssigned = false;
+            foreach (var assignment in gamepadAssignments)
+            {
+                if (assignment.Value == i)
+                {
+                    isAssigned = true;
+                    break;
+                }
+            }
+
+            if (!isAssigned)
+            {
+                availableGamepads.Add(i);
+            }
+        }
     }
 
     void Update()
     {
-        // Store previous frame states for press detection
-        bool prevAction1 = action1Pressed;
-        bool prevAction2 = action2Pressed;
-        bool prevJump = jumpPressed;
+        // Check for new gamepads periodically
+        if (assignedGamepad == null && Time.frameCount % 60 == 0) // Check once per second
+        {
+            AssignGamepadToPlayer();
+        }
 
-        // Reset press states (but keep held states)
+        // Store previous frame states for press detection
+        wasAction1PressedLastFrame = action1Held;
+        wasAction2PressedLastFrame = action2Held;
+        wasJumpPressedLastFrame = jumpHeld;
+
+        // Reset press states
         jumpPressed = false;
         action1Pressed = false;
         action2Pressed = false;
 
-        bool foundInput = false;
+        // Clear input
+        moveInput = Vector2.zero;
+        aimInput = Vector2.zero;
+        jumpHeld = false;
+        action1Held = false;
+        action2Held = false;
 
-        // Check gamepad first (higher priority)
-        if (currentGamepad != null && CheckGamepadInput())
+        bool hasInput = false;
+
+        // PRIORITY 1: Check assigned gamepad input (if available)
+        if (enableGamepad && assignedGamepad != null)
         {
-            foundInput = true;
-            SwitchToMethod("gamepad");
+            if (CheckGamepadInput())
+            {
+                hasInput = true;
+                // Update current method to show gamepad is active
+                string gamepadMethod = $"Gamepad{assignedGamepadIndex}";
+                if (currentInputMethod != gamepadMethod)
+                {
+                    currentInputMethod = gamepadMethod;
+                    Debug.Log($"🎮 Player {playerIndex} using {currentInputMethod}");
+                }
+            }
         }
 
-        // Check keyboard schemes
-        if (!foundInput || enableRealTimeSwitching)
+        // PRIORITY 2: Check keyboard input (if no gamepad input or as supplement)
+        if (enableKeyboard && keyboard != null && (!hasInput || assignedGamepad == null))
         {
-            if (CheckKeyboardInput(playerIndex == 0 ? "WASD" : "Arrows"))
+            if (CheckKeyboardInput())
             {
-                foundInput = true;
-                SwitchToMethod(playerIndex == 0 ? "WASD" : "Arrows");
-            }
-            else if (enableRealTimeSwitching)
-            {
-                // Try other keyboard schemes
-                if (CheckKeyboardInput("WASD"))
+                if (!hasInput) // Only set as primary input method if no gamepad
                 {
-                    SwitchToMethod("WASD");
+                    string keyboardMethod = GetKeyboardMethodName();
+                    if (currentInputMethod != keyboardMethod)
+                    {
+                        currentInputMethod = keyboardMethod;
+                        Debug.Log($"⌨️ Player {playerIndex} using {currentInputMethod}");
+                    }
                 }
-                else if (CheckKeyboardInput("Arrows"))
-                {
-                    SwitchToMethod("Arrows");
-                }
+                hasInput = true;
             }
         }
 
@@ -99,83 +239,108 @@ public class SimpleFlexibleInput : MonoBehaviour
             action2Pressed = true;
         if (jumpHeld && !wasJumpPressedLastFrame)
             jumpPressed = true;
-
-        wasAction1PressedLastFrame = action1Held;
-        wasAction2PressedLastFrame = action2Held;
-        wasJumpPressedLastFrame = jumpHeld;
     }
 
     bool CheckGamepadInput()
     {
+        if (assignedGamepad == null) return false;
+
         bool hasInput = false;
 
-        Vector2 leftStick = currentGamepad.leftStick.ReadValue();
-        Vector2 dpad = currentGamepad.dpad.ReadValue();
-        moveInput = leftStick.magnitude > 0.1f ? leftStick : dpad;
+        // Movement
+        Vector2 leftStick = assignedGamepad.leftStick.ReadValue();
+        Vector2 dpad = assignedGamepad.dpad.ReadValue();
+        Vector2 gamepadMove = leftStick.magnitude > inputDeadzone ? leftStick : dpad;
 
-        Vector2 rightStick = currentGamepad.rightStick.ReadValue();
-        aimInput = rightStick.magnitude > 0.1f ? rightStick : moveInput;
+        if (gamepadMove.magnitude > inputDeadzone)
+        {
+            moveInput = gamepadMove;
+            hasInput = true;
+        }
 
-        if (moveInput.magnitude > 0.1f) hasInput = true;
+        // Aiming (right stick or movement)
+        Vector2 rightStick = assignedGamepad.rightStick.ReadValue();
+        Vector2 gamepadAim = rightStick.magnitude > inputDeadzone ? rightStick : gamepadMove;
 
-        // Button states
-        jumpHeld = currentGamepad.buttonSouth.isPressed;
-        action1Held = currentGamepad.rightTrigger.isPressed || currentGamepad.buttonWest.isPressed;
-        action2Held = currentGamepad.rightShoulder.isPressed || currentGamepad.buttonNorth.isPressed;
+        if (gamepadAim.magnitude > inputDeadzone)
+        {
+            aimInput = gamepadAim;
+        }
 
-        if (jumpHeld || action1Held || action2Held) hasInput = true;
+        // Buttons
+        if (assignedGamepad.buttonSouth.isPressed) { jumpHeld = true; hasInput = true; }
+        if (assignedGamepad.rightTrigger.isPressed || assignedGamepad.buttonWest.isPressed) { action1Held = true; hasInput = true; }
+        if (assignedGamepad.rightShoulder.isPressed || assignedGamepad.buttonNorth.isPressed) { action2Held = true; hasInput = true; }
 
         return hasInput;
     }
 
-    bool CheckKeyboardInput(string scheme)
+    bool CheckKeyboardInput()
     {
-        if (keyboard == null) return false;
+        if (keyboard == null || keyboardSchemes == null) return false;
 
         bool hasInput = false;
-        Vector2 movement = Vector2.zero;
+        Vector2 keyboardMove = Vector2.zero;
 
-        if (scheme == "WASD")
+        // Movement
+        if (keyboardSchemes.ContainsKey("move"))
         {
-            if (keyboard.aKey.isPressed) { movement.x -= 1; hasInput = true; }
-            if (keyboard.dKey.isPressed) { movement.x += 1; hasInput = true; }
-            if (keyboard.wKey.isPressed) { movement.y += 1; hasInput = true; }
-            if (keyboard.sKey.isPressed) { movement.y -= 1; hasInput = true; }
-
-            jumpHeld = keyboard.spaceKey.isPressed;
-            action1Held = keyboard.leftCtrlKey.isPressed;
-            action2Held = keyboard.leftShiftKey.isPressed;
-        }
-        else if (scheme == "Arrows")
-        {
-            if (keyboard.leftArrowKey.isPressed) { movement.x -= 1; hasInput = true; }
-            if (keyboard.rightArrowKey.isPressed) { movement.x += 1; hasInput = true; }
-            if (keyboard.upArrowKey.isPressed) { movement.y += 1; hasInput = true; }
-            if (keyboard.downArrowKey.isPressed) { movement.y -= 1; hasInput = true; }
-
-            jumpHeld = keyboard.enterKey.isPressed;
-            action1Held = keyboard.rightCtrlKey.isPressed;
-            action2Held = keyboard.rightShiftKey.isPressed;
+            Key[] moveKeys = keyboardSchemes["move"];
+            if (moveKeys.Length >= 4)
+            {
+                if (keyboard[moveKeys[0]].isPressed) { keyboardMove.x -= 1; hasInput = true; } // left
+                if (keyboard[moveKeys[1]].isPressed) { keyboardMove.x += 1; hasInput = true; } // right
+                if (keyboard[moveKeys[2]].isPressed) { keyboardMove.y += 1; hasInput = true; } // up
+                if (keyboard[moveKeys[3]].isPressed) { keyboardMove.y -= 1; hasInput = true; } // down
+            }
         }
 
-        if (hasInput || jumpHeld || action1Held || action2Held)
+        // Only use keyboard movement if no gamepad movement OR gamepad not assigned
+        if (assignedGamepad == null || moveInput.magnitude < inputDeadzone)
         {
-            moveInput = movement;
-            if (movement.magnitude > 0.1f)
-                aimInput = movement;
+            if (keyboardMove.magnitude > 0)
+            {
+                moveInput = keyboardMove.normalized;
+                aimInput = keyboardMove.normalized;
+            }
+        }
+
+        // Buttons (keyboard can always supplement gamepad buttons)
+        if (keyboardSchemes.ContainsKey("jump") && keyboard[keyboardSchemes["jump"][0]].isPressed)
+        {
+            jumpHeld = true;
+            hasInput = true;
+        }
+
+        if (keyboardSchemes.ContainsKey("action1") && keyboard[keyboardSchemes["action1"][0]].isPressed)
+        {
+            action1Held = true;
+            hasInput = true;
+        }
+
+        if (keyboardSchemes.ContainsKey("action2") && keyboard[keyboardSchemes["action2"][0]].isPressed)
+        {
+            action2Held = true;
             hasInput = true;
         }
 
         return hasInput;
     }
 
-    void SwitchToMethod(string method)
+    string GetKeyboardMethodName()
     {
-        if (currentInputMethod != method && Time.time - lastSwitchTime >= switchCooldown)
+        if (playerIndex == 0) return "WASD";
+        else if (playerIndex == 1) return "Arrows";
+        else return "IJKL";
+    }
+
+    void OnDestroy()
+    {
+        // Release gamepad assignment when destroyed
+        if (gamepadAssignments.ContainsKey(playerIndex))
         {
-            currentInputMethod = method;
-            lastSwitchTime = Time.time;
-            Debug.Log($"🎮 Player {playerIndex} switched to {method}");
+            gamepadAssignments.Remove(playerIndex);
+            RefreshAvailableGamepads();
         }
     }
 
@@ -183,10 +348,38 @@ public class SimpleFlexibleInput : MonoBehaviour
     {
         if (Application.isEditor)
         {
-            GUI.Label(new Rect(10, playerIndex * 60 + 200, 300, 20),
-                $"Player {playerIndex}: {currentInputMethod}");
-            GUI.Label(new Rect(10, playerIndex * 60 + 220, 300, 20),
-                $"Move: {moveInput:F1} | Actions: {action1Held}/{action2Held}");
+            float yOffset = playerIndex * 120 + 10;
+
+            GUI.Box(new Rect(10, yOffset, 350, 110), $"Player {playerIndex} Input");
+
+            GUI.Label(new Rect(20, yOffset + 25, 330, 20),
+                $"Method: {currentInputMethod}");
+            GUI.Label(new Rect(20, yOffset + 45, 330, 20),
+                $"Move: {moveInput:F2} | Aim: {aimInput:F2}");
+            GUI.Label(new Rect(20, yOffset + 65, 330, 20),
+                $"Jump: {jumpHeld} | A1: {action1Held} | A2: {action2Held}");
+            GUI.Label(new Rect(20, yOffset + 85, 330, 20),
+                $"Gamepad: {assignedGamepad?.name ?? "None"}");
         }
+    }
+
+    // Public methods for debugging
+    [ContextMenu("Force Reassign Gamepad")]
+    public void ForceReassignGamepad()
+    {
+        if (gamepadAssignments.ContainsKey(playerIndex))
+        {
+            gamepadAssignments.Remove(playerIndex);
+        }
+        assignedGamepad = null;
+        assignedGamepadIndex = -1;
+        AssignGamepadToPlayer();
+    }
+
+    public static void ReleaseAllGamepadAssignments()
+    {
+        gamepadAssignments.Clear();
+        availableGamepads.Clear();
+        Debug.Log("All gamepad assignments released");
     }
 }
