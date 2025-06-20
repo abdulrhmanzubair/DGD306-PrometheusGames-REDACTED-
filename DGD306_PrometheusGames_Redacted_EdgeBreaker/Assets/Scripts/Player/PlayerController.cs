@@ -4,6 +4,7 @@ using UnityEngine.InputSystem;
 /// <summary>
 /// Enhanced player controller (Gunner) optimized for isolated input system
 /// Each player gets completely independent gamepad + keyboard controls
+/// WITH MINIMAL PVP SCORING INTEGRATION
 /// </summary>
 public class PlayerController : MonoBehaviour
 {
@@ -62,11 +63,18 @@ public class PlayerController : MonoBehaviour
     private bool fire1Pressed;
     private bool fire2Pressed;
 
+    // Facing direction tracking for proper bullet direction
+    private Vector2 lastFacingDirection = Vector2.right;
+
     // Fallback input (only used if isolated system fails)
     private SimpleFlexibleInput flexInput;
     private PlayerDeviceInfo deviceInfo;
     private InputDevice assignedDevice;
     private Keyboard keyboard;
+
+    // PVP SCORING INTEGRATION (MINIMAL)
+    private PvPScoreManager pvpScoreManager;
+    private PlayerIdentifier playerIdentifier;
 
     void Awake()
     {
@@ -106,6 +114,54 @@ public class PlayerController : MonoBehaviour
         if (healthSystem != null)
         {
             healthSystem.PlayerIndex = PlayerIndex;
+        }
+
+        // PVP INTEGRATION (MINIMAL ADDITION)
+        SetupPvPIntegration();
+    }
+
+    // PVP INTEGRATION METHODS (NEW)
+    void SetupPvPIntegration()
+    {
+        // Add PlayerIdentifier if it doesn't exist
+        playerIdentifier = GetComponent<PlayerIdentifier>();
+        if (playerIdentifier == null)
+        {
+            playerIdentifier = gameObject.AddComponent<PlayerIdentifier>();
+        }
+        playerIdentifier.playerNumber = PlayerIndex + 1; // Convert 0,1 to 1,2
+
+        // Find score manager
+        pvpScoreManager = FindObjectOfType<PvPScoreManager>();
+        if (pvpScoreManager == null)
+        {
+            Debug.LogWarning("No PvPScoreManager found in scene!");
+        }
+
+        // Subscribe to death
+        if (healthSystem != null)
+        {
+            healthSystem.OnPlayerDeath += OnPlayerDeath;
+        }
+    }
+
+    void OnPlayerDeath()
+    {
+        // Simple kill attribution - other player gets the kill
+        if (pvpScoreManager != null)
+        {
+            int otherPlayer = PlayerIndex == 0 ? 2 : 1; // Get other player number
+            pvpScoreManager.RecordKill(otherPlayer, PlayerIndex + 1);
+            Debug.Log($"Player {PlayerIndex + 1} died - Kill awarded to Player {otherPlayer}");
+        }
+    }
+
+    void OnDestroy()
+    {
+        // Prevent memory leaks
+        if (healthSystem != null)
+        {
+            healthSystem.OnPlayerDeath -= OnPlayerDeath;
         }
     }
 
@@ -202,14 +258,21 @@ public class PlayerController : MonoBehaviour
         fire1Pressed = inputInjector.GetAction1Pressed();
         fire2Pressed = inputInjector.GetAction2Pressed();
 
-        // Ensure aim direction is valid
+        // Ensure aim direction is valid and preserve facing direction
         if (aimInput.magnitude < 0.1f && moveInput.magnitude > 0.1f)
         {
             aimInput = moveInput;
+            lastFacingDirection = moveInput.normalized;
         }
         else if (aimInput.magnitude < 0.1f)
         {
-            aimInput = Vector2.right; // Default facing direction
+            // Use last facing direction instead of always going right
+            aimInput = lastFacingDirection;
+        }
+        else
+        {
+            // Store current aim direction as last facing direction
+            lastFacingDirection = aimInput.normalized;
         }
 
         // Debug: Show input activity
@@ -233,13 +296,21 @@ public class PlayerController : MonoBehaviour
         fire1Pressed = flexInput.action1Pressed;
         fire2Pressed = flexInput.action2Pressed;
 
+        // Ensure aim direction is valid and preserve facing direction
         if (aimInput.magnitude < 0.1f && moveInput.magnitude > 0.1f)
         {
             aimInput = moveInput;
+            lastFacingDirection = moveInput.normalized;
         }
         else if (aimInput.magnitude < 0.1f)
         {
-            aimInput = Vector2.right;
+            // Use last facing direction instead of always going right
+            aimInput = lastFacingDirection;
+        }
+        else
+        {
+            // Store current aim direction as last facing direction
+            lastFacingDirection = aimInput.normalized;
         }
     }
 
@@ -263,9 +334,19 @@ public class PlayerController : MonoBehaviour
 
         Vector2 rightStick = gamepad.rightStick.ReadValue();
         if (rightStick.magnitude > 0.1f)
+        {
             aimInput = rightStick;
+            lastFacingDirection = rightStick.normalized;
+        }
         else if (moveInput.magnitude > 0.1f)
+        {
             aimInput = moveInput;
+            lastFacingDirection = moveInput.normalized;
+        }
+        else
+        {
+            aimInput = lastFacingDirection;
+        }
 
         jumpPressed = gamepad.buttonSouth.isPressed;
         if (gamepad.buttonSouth.wasPressedThisFrame)
@@ -317,7 +398,14 @@ public class PlayerController : MonoBehaviour
 
         moveInput = keyboardMove;
         if (moveInput.magnitude > 0.1f)
+        {
             aimInput = moveInput;
+            lastFacingDirection = moveInput.normalized;
+        }
+        else
+        {
+            aimInput = lastFacingDirection;
+        }
     }
 
     public void Initialize(int playerIndex)
@@ -329,6 +417,12 @@ public class PlayerController : MonoBehaviour
         if (healthSystem != null)
         {
             healthSystem.PlayerIndex = PlayerIndex;
+        }
+
+        // Update PlayerIdentifier
+        if (playerIdentifier != null)
+        {
+            playerIdentifier.playerNumber = PlayerIndex + 1; // Convert 0,1 to 1,2
         }
     }
 
@@ -345,7 +439,11 @@ public class PlayerController : MonoBehaviour
     {
         rb.linearVelocity = new Vector2(moveInput.x * moveSpeed, rb.linearVelocity.y);
         if (moveInput.x != 0)
+        {
             transform.localScale = new Vector3(Mathf.Sign(moveInput.x), 1, 1);
+            // Update last facing direction when moving
+            lastFacingDirection = new Vector2(Mathf.Sign(moveInput.x), 0);
+        }
     }
 
     void CheckGrounded()
@@ -507,6 +605,25 @@ public class PlayerController : MonoBehaviour
                 }
             }
         }
+
+        // PVP: Take damage from other player's attacks (SIMPLE VERSION)
+        PlayerIdentifier otherPlayer = other.GetComponent<PlayerIdentifier>();
+        if (otherPlayer != null && otherPlayer.playerNumber != playerIdentifier.playerNumber)
+        {
+            if (healthSystem != null)
+            {
+                float pvpContactDamage = 15f;
+                healthSystem.TakeDamage(pvpContactDamage);
+                Debug.Log($"Player {playerIdentifier.playerNumber} hit by Player {otherPlayer.playerNumber} for {pvpContactDamage} damage!");
+
+                // Push players away from each other
+                Vector2 pushDirection = (transform.position - other.transform.position).normalized;
+                if (rb != null)
+                {
+                    rb.AddForce(pushDirection * 5f, ForceMode2D.Impulse);
+                }
+            }
+        }
     }
 
     // Public methods
@@ -514,7 +631,19 @@ public class PlayerController : MonoBehaviour
     public float GetGrenadeCooldownRemaining() => Mathf.Max(0f, nextGrenadeTime - Time.time);
     public PlayerHealthSystem GetHealthSystem() => healthSystem;
 
-    Vector2 GetAimDirection() => aimInput != Vector2.zero ? aimInput.normalized : (Vector2)transform.right;
+    Vector2 GetAimDirection()
+    {
+        if (aimInput != Vector2.zero)
+        {
+            return aimInput.normalized;
+        }
+        else
+        {
+            // Use the player's current facing direction from localScale
+            float facingDirection = transform.localScale.x;
+            return new Vector2(facingDirection, 0);
+        }
+    }
 
     void UpdateAnimator()
     {
@@ -557,5 +686,9 @@ public class PlayerController : MonoBehaviour
             Gizmos.color = Color.green;
             Gizmos.DrawWireCube(transform.position + Vector3.up * 3f, Vector3.one * 0.3f);
         }
+
+        // Draw facing direction
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawRay(transform.position, lastFacingDirection * 2f);
     }
 }

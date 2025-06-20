@@ -94,7 +94,7 @@ public class TransitionUI : MonoBehaviour
 
         messageText = messageGO.AddComponent<Text>();
         messageText.text = "Level Complete!";
-        messageText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        messageText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         messageText.fontSize = 48;
         messageText.color = Color.white;
         messageText.alignment = TextAnchor.MiddleCenter;
@@ -111,7 +111,7 @@ public class TransitionUI : MonoBehaviour
 
         levelNameText = levelGO.AddComponent<Text>();
         levelNameText.text = "Loading Next Level...";
-        levelNameText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        levelNameText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         levelNameText.fontSize = 24;
         levelNameText.color = Color.yellow;
         levelNameText.alignment = TextAnchor.MiddleCenter;

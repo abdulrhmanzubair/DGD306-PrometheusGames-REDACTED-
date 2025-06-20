@@ -9,20 +9,38 @@ EditorBuildSettings:
     path: Assets/Scenes/MainMenu.unity
     guid: 68dec3d195e90c04a9d47d2449c83df7
   - enabled: 1
-    path: Assets/Scenes/CharecterSelection.unity
-    guid: caa6f5661bcab9642b34048a992c8c58
-  - enabled: 1
     path: Assets/Scenes/Guide.unity
     guid: d95bfd9d2ab3e544d82b560b51a18370
+  - enabled: 1
+    path: Assets/Cutscene/Comic_Cutscene.unity
+    guid: 147b0c833f9e4ea48b71479d6ed2dbf4
+  - enabled: 1
+    path: Assets/Scenes/CharecterSelection.unity
+    guid: caa6f5661bcab9642b34048a992c8c58
   - enabled: 1
     path: Assets/Scenes/LVL_001.unity
     guid: 8c9cfa26abfee488c85f1582747f6a02
   - enabled: 1
-    path: Assets/Scenes/LVL_002.unity
+    path: Assets/Scenes/LVL_003.unity
     guid: 48a1ff84dac99364f95780ec37120d1d
+  - enabled: 1
+    path: Assets/Scenes/BOSS.unity
+    guid: c534a726a4926cb48b4ef468c740b783
+  - enabled: 1
+    path: Assets/Scenes/PVP.unity
+    guid: 716504ca2f604a748b9e979a857ce550
+  - enabled: 1
+    path: Assets/Scenes/CharecterSelection_PVP.unity
+    guid: e8c7426e561bbb64eb327d4cc07c5351
+  - enabled: 1
+    path: Assets/Scenes/GameOver.unity
+    guid: 35a11766a31379d4fb2c3ab7f2924f32
   - enabled: 1
     path: Assets/Scenes/GameComplete.unity
     guid: 5d9896f039cfd2840aa04d24bd4dd0ae
+  - enabled: 0
+    path: Assets/Scenes/LVL_002.unity
+    guid: 46b37b21664b8b54799c192e9f89bdef
   m_configObjects:
     com.unity.input.settings: {fileID: 11400000, guid: 91ba6ad756844a54fa63d9072766022f, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}

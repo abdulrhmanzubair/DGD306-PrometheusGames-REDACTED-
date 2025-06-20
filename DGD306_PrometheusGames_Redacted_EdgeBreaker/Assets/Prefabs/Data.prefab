@@ -99,7 +99,7 @@ GameObject:
   - component: {fileID: 4867988793508015709}
   m_Layer: 0
   m_Name: Data
-  m_TagString: Player
+  m_TagString: Data
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

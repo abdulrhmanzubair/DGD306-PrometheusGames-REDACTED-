@@ -253,13 +253,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   explosionRadius: 14
   explosionDamage: 500
-  fuseTime: 1.3
+  explosionForce: 15
   damageableLayers:
     serializedVersion: 2
     m_Bits: 64
+  fuseTime: 1.3
   explosionEffectPrefab: {fileID: 1780990898665742232, guid: 9cdceca07fa85c64f8c471404900dad8, type: 3}
-  explosionEffectDuration: 0.3
-  explosionSound: {fileID: 8300000, guid: f17da19450c347a4e95db4530f935606, type: 3}
+  explosionSound: {fileID: 8300000, guid: 2708114e7fe9f4f4597f1d875a371c22, type: 3}
+  explosionVolume: 1
 --- !u!114 &4331415851757495264
 MonoBehaviour:
   m_ObjectHideFlags: 0

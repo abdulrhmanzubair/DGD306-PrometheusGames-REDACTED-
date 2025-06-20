@@ -15,6 +15,14 @@ public class MainMenu : MonoBehaviour
         SceneManager.LoadScene("Guide");
     }
 
+    public void Cutscene()
+    {
+        SceneManager.LoadScene("Comic_Cutscene");
+    }
+    public void PVP()
+    {
+        SceneManager.LoadScene("CharecterSelection_PVP");
+    }
     public void Quit()
     {
         Application.Quit();

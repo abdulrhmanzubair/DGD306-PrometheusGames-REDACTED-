@@ -15,6 +15,11 @@ TagManager:
   - Checkpoint
   - Grenade
   - Shield
+  - Player_Melee
+  - Player_Gunner
+  - Player_Gunner2
+  - Player_Melee2
+  - PlayerProjectile
   layers:
   - Default
   - TransparentFX
@@ -28,11 +33,11 @@ TagManager:
   - grenade
   - shield
   - EnemyProjectile
-  - 
-  - 
-  - 
-  - 
-  - 
+  - Checkpoint
+  - Player_Melee
+  - Player_Gunner
+  - EnemyProjectile
+  - PlayerProjectile
   - 
   - 
   - 

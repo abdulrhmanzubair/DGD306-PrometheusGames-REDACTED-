@@ -14,9 +14,9 @@ GameObject:
   - component: {fileID: -957760310780712008}
   - component: {fileID: 2534926644226548403}
   - component: {fileID: 1968732850579015275}
-  m_Layer: 8
+  m_Layer: 15
   m_Name: Bullet3
-  m_TagString: Player
+  m_TagString: EnemyProjectile
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -80,7 +80,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 3
   m_Sprite: {fileID: -4674088388612016952, guid: f870da15717c5ac48804fd0ebf7339b8, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -109,6 +109,10 @@ MonoBehaviour:
   lifetime: 3
   lifeStages: []
   hitEffectPrefab: {fileID: 1780990898665742232, guid: b55af54d10fa9d847a5ac7ddbe2a4b2b, type: 3}
+  shootSound: {fileID: 0}
+  hitSound: {fileID: 0}
+  shootVolume: 0.7
+  hitVolume: 0.5
   shooterTag: Player
 --- !u!95 &-957760310780712008
 Animator:
@@ -206,7 +210,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2936249480970571706}
   - component: {fileID: 3288705536048216186}
-  m_Layer: 8
+  m_Layer: 15
   m_Name: Light 2D
   m_TagString: Untagged
   m_Icon: {fileID: 0}

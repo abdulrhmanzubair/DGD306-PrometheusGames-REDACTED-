@@ -6057,7 +6057,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 1
+  m_SortingOrder: 4
   m_Sprite: {fileID: 622985489596670909, guid: fc85dfe1d5422814b9afb2cb48f6e291, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -6312,6 +6312,15 @@ MonoBehaviour:
   guardSpawnPoint: {fileID: 4179661817814541990}
   guardCooldown: 2
   guardLifetime: 3
+  guardCooldownFill: {fileID: 0}
+  guardCooldownText: {fileID: 0}
+  cooldownColor: {r: 1, g: 0, b: 0, a: 1}
+  readyColor: {r: 0, g: 1, b: 0, a: 1}
+  normalSprite: {fileID: 0}
+  attackSprite: {fileID: 0}
+  dashSprite: {fileID: 0}
+  spriteChangeDelay: 0.1
+  useAnimatorForSprites: 0
   attackPoint: {fileID: 8452139274831645909}
   slashEffectPrefab: {fileID: 5077767555971575020}
   dashDistance: 18
@@ -6348,7 +6357,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxHealth: 100
-  currentHealth: 0
   canTakeDamage: 1
   invulnerabilityTime: 1
   healthBar: {fileID: 5778620377765859074}
@@ -6369,9 +6377,8 @@ MonoBehaviour:
   hurtVolume: 0.7
   deathVolume: 0.8
   healVolume: 0.5
-  respawnDelay: 0.3
-  respawnPoint: {fileID: 7944057693084603276}
   deathEffectPrefab: {fileID: 1780990898665742232, guid: 9cdceca07fa85c64f8c471404900dad8, type: 3}
+  enableDebugLogs: 1
 --- !u!1 &9114657336432228754
 GameObject:
   m_ObjectHideFlags: 0

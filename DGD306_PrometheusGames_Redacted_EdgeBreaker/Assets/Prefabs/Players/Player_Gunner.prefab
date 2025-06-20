@@ -307,7 +307,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 4
   m_Sprite: {fileID: -9112276502525935105, guid: 8a43a8ade01aa1f499d472e616fe98d1, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -422,7 +422,8 @@ MonoBehaviour:
   readyColor: {r: 1, g: 1, b: 1, a: 1}
   fallMultiplier: 4
   lowJumpMultiplier: 2
-  shootSounds: []
+  shootSounds:
+  - {fileID: 8300000, guid: f17da19450c347a4e95db4530f935606, type: 3}
   grenadeThrowSound: {fileID: 8300000, guid: a58e438b7cfa445498120af0e6169082, type: 3}
   shootVolume: 0.6
   grenadeVolume: 0.5
@@ -587,7 +588,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxHealth: 100
-  currentHealth: 0
   canTakeDamage: 1
   invulnerabilityTime: 1
   healthBar: {fileID: 6434294315810746944}
@@ -608,9 +608,8 @@ MonoBehaviour:
   hurtVolume: 0.7
   deathVolume: 0.8
   healVolume: 0.5
-  respawnDelay: 0.4
-  respawnPoint: {fileID: 199680460213162210}
   deathEffectPrefab: {fileID: 1780990898665742232, guid: 9cdceca07fa85c64f8c471404900dad8, type: 3}
+  enableDebugLogs: 1
 --- !u!1 &5526802734562038661
 GameObject:
   m_ObjectHideFlags: 0
@@ -1084,8 +1083,8 @@ MonoBehaviour:
   m_LightType: 3
   m_BlendStyleIndex: 0
   m_FalloffIntensity: 0.5
-  m_Color: {r: 1, g: 0.3443396, b: 0.3443396, a: 1}
-  m_Intensity: 4.78
+  m_Color: {r: 0.36305365, g: 1, b: 0.34509802, a: 1}
+  m_Intensity: 28.4
   m_LightVolumeIntensity: 1
   m_LightVolumeEnabled: 0
   m_ApplyToSortingLayers: 00000000

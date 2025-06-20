@@ -3,135 +3,214 @@ using UnityEngine.UI;
 using System.Collections;
 
 /// <summary>
-/// Universal health system for all player types (Gunner, Melee, etc.)
-/// Handles damage, healing, death, and UI updates
+/// Updated PlayerHealthSystem integrated with checkpoint and death management
+/// Expert Unity implementation with proper architecture
 /// </summary>
 public class PlayerHealthSystem : MonoBehaviour, IDamageable
 {
+    #region Serialized Fields
+
     [Header("Health Settings")]
-    public int maxHealth = 100;
-    public int currentHealth;
-    public bool canTakeDamage = true;
-    public float invulnerabilityTime = 1f; // Time after taking damage where player can't be hurt
+    [SerializeField] private int maxHealth = 100;
+    [SerializeField] private bool canTakeDamage = true;
+    [SerializeField] private float invulnerabilityTime = 1f;
 
     [Header("Health UI")]
-    public Slider healthBar;
-    public Text healthText;
-    public Image healthBarFill;
-    public Color healthyColor = Color.green;
-    public Color damagedColor = Color.yellow;
-    public Color criticalColor = Color.red;
+    [SerializeField] private Slider healthBar;
+    [SerializeField] private Text healthText;
+    [SerializeField] private Image healthBarFill;
+    [SerializeField] private Color healthyColor = Color.green;
+    [SerializeField] private Color damagedColor = Color.yellow;
+    [SerializeField] private Color criticalColor = Color.red;
 
     [Header("Damage Visual Effects")]
-    public SpriteRenderer playerSprite;
-    public Color damageFlashColor = Color.red;
-    public float flashDuration = 0.1f;
-    public GameObject damageTextPrefab; // Optional floating damage text
+    [SerializeField] private SpriteRenderer playerSprite;
+    [SerializeField] private Color damageFlashColor = Color.red;
+    [SerializeField] private float flashDuration = 0.1f;
+    [SerializeField] private GameObject damageTextPrefab;
 
     [Header("Audio")]
-    public AudioClip[] hurtSounds;
-    public AudioClip[] deathSounds;
-    public AudioClip healSound;
-    [Range(0f, 1f)] public float hurtVolume = 0.7f;
-    [Range(0f, 1f)] public float deathVolume = 0.8f;
-    [Range(0f, 1f)] public float healVolume = 0.5f;
+    [SerializeField] private AudioClip[] hurtSounds;
+    [SerializeField] private AudioClip[] deathSounds;
+    [SerializeField] private AudioClip healSound;
+    [SerializeField][Range(0f, 1f)] private float hurtVolume = 0.7f;
+    [SerializeField][Range(0f, 1f)] private float deathVolume = 0.8f;
+    [SerializeField][Range(0f, 1f)] private float healVolume = 0.5f;
 
-    [Header("Death Settings")]
-    public float respawnDelay = 3f;
-    public Transform respawnPoint;
-    public GameObject deathEffectPrefab;
+    [Header("Death Effects")]
+    [SerializeField] private GameObject deathEffectPrefab;
 
-    // Private variables
+    [Header("Debug")]
+    [SerializeField] private bool enableDebugLogs = true;
+
+    #endregion
+
+    #region Private Fields
+
+    // Health state
+    private int currentHealth;
     private bool isInvulnerable = false;
     private bool isDead = false;
+
+    // Components
     private AudioSource audioSource;
     private Color originalSpriteColor;
     private Rigidbody2D rb;
     private Collider2D playerCollider;
 
-    // Events
+    // Coroutine tracking
+    private Coroutine invulnerabilityCoroutine;
+    private Coroutine damageFlashCoroutine;
+
+    #endregion
+
+    #region Events
+
     public event System.Action<int, int> OnHealthChanged; // (currentHealth, maxHealth)
     public event System.Action OnPlayerDeath;
     public event System.Action OnPlayerRespawn;
     public event System.Action<float> OnDamageTaken; // (damage amount)
+    public event System.Action<int> OnPlayerHealed; // (heal amount)
 
-    // Public properties
+    #endregion
+
+    #region Properties
+
     public int PlayerIndex { get; set; }
-    public bool IsAlive { get { return !isDead; } }
-    public bool IsInvulnerable { get { return isInvulnerable; } }
+    public bool IsAlive => !isDead;
+    public bool IsInvulnerable => isInvulnerable;
+    public int CurrentHealth => currentHealth;
+    public int MaxHealth => maxHealth;
+    public float HealthPercentage => (float)currentHealth / maxHealth;
 
-    void Start()
+    #endregion
+
+    #region Unity Lifecycle
+
+    private void Awake()
     {
-        Initialize();
+        InitializeComponents();
     }
 
-    void Initialize()
+    private void Start()
     {
-        // Initialize health
-        currentHealth = maxHealth;
-        isDead = false;
-        isInvulnerable = false;
+        InitializeHealth();
+        RegisterWithGameManager();
 
-        // Get components
+        if (enableDebugLogs)
+        {
+            Debug.Log($"[PlayerHealthSystem] Player {PlayerIndex} initialized - Health: {currentHealth}/{maxHealth}");
+        }
+    }
+
+    private void OnDestroy()
+    {
+        UnregisterFromGameManager();
+        StopAllCoroutines();
+    }
+
+    #endregion
+
+    #region Initialization
+
+    private void InitializeComponents()
+    {
+        // Get required components
         rb = GetComponent<Rigidbody2D>();
         playerCollider = GetComponent<Collider2D>();
 
-        // Set up audio
+        // Setup audio source
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null)
         {
             audioSource = gameObject.AddComponent<AudioSource>();
         }
         audioSource.playOnAwake = false;
-        audioSource.spatialBlend = 0.3f;
+        audioSource.spatialBlend = 0.3f; // Slight 3D audio
 
         // Store original sprite color
         if (playerSprite != null)
         {
             originalSpriteColor = playerSprite.color;
         }
-
-        // Set up respawn point if not assigned
-        if (respawnPoint == null)
+        else
         {
-            respawnPoint = transform;
+            // Try to find sprite renderer if not assigned
+            playerSprite = GetComponent<SpriteRenderer>();
+            if (playerSprite != null)
+            {
+                originalSpriteColor = playerSprite.color;
+            }
         }
-
-        // Initialize UI
-        UpdateHealthUI();
-
-        Debug.Log($"Player {PlayerIndex} Health System initialized - Health: {currentHealth}/{maxHealth}");
     }
+
+    private void InitializeHealth()
+    {
+        currentHealth = maxHealth;
+        isDead = false;
+        isInvulnerable = false;
+        UpdateHealthUI();
+    }
+
+    private void RegisterWithGameManager()
+    {
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.RegisterPlayer(this);
+        }
+        else
+        {
+            Debug.LogWarning($"[PlayerHealthSystem] Player {PlayerIndex} - No GameManager found for registration!");
+        }
+    }
+
+    private void UnregisterFromGameManager()
+    {
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.UnregisterPlayer(this);
+        }
+    }
+
+    #endregion
+
+    #region Damage System
 
     public void TakeDamage(float amount)
     {
         if (!canTakeDamage || isInvulnerable || isDead)
         {
-            Debug.Log($"Player {PlayerIndex} damage blocked - CanTakeDamage: {canTakeDamage}, Invulnerable: {isInvulnerable}, Dead: {isDead}");
+            if (enableDebugLogs && amount > 0)
+            {
+                Debug.Log($"[PlayerHealthSystem] Player {PlayerIndex} damage blocked - CanTakeDamage: {canTakeDamage}, Invulnerable: {isInvulnerable}, Dead: {isDead}");
+            }
             return;
         }
 
         int damage = Mathf.RoundToInt(amount);
+        int oldHealth = currentHealth;
+
         currentHealth -= damage;
         currentHealth = Mathf.Max(currentHealth, 0);
 
-        Debug.Log($"Player {PlayerIndex} took {damage} damage! Health: {currentHealth}/{maxHealth}");
+        if (enableDebugLogs)
+        {
+            Debug.Log($"[PlayerHealthSystem] Player {PlayerIndex} took {damage} damage! Health: {currentHealth}/{maxHealth}");
+        }
 
         // Trigger events
         OnDamageTaken?.Invoke(amount);
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
 
-        // Play hurt sound
+        // Audio and visual feedback
         PlayHurtSound();
-
-        // Visual feedback
-        StartCoroutine(DamageFlash());
+        StartDamageFlash();
         ShowDamageText(damage);
 
-        // Start invulnerability
+        // Start invulnerability period
         if (invulnerabilityTime > 0)
         {
-            StartCoroutine(InvulnerabilityCoroutine());
+            StartInvulnerability();
         }
 
         // Check for death
@@ -141,22 +220,30 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
         }
         else
         {
-            // Update UI
             UpdateHealthUI();
         }
     }
 
+    #endregion
+
+    #region Healing System
+
     public void Heal(int amount)
     {
-        if (isDead) return;
+        if (isDead || amount <= 0) return;
 
         int oldHealth = currentHealth;
         currentHealth += amount;
         currentHealth = Mathf.Min(currentHealth, maxHealth);
 
-        if (currentHealth > oldHealth)
+        int actualHealed = currentHealth - oldHealth;
+
+        if (actualHealed > 0)
         {
-            Debug.Log($"Player {PlayerIndex} healed for {currentHealth - oldHealth}! Health: {currentHealth}/{maxHealth}");
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[PlayerHealthSystem] Player {PlayerIndex} healed for {actualHealed}! Health: {currentHealth}/{maxHealth}");
+            }
 
             // Play heal sound
             if (healSound != null && audioSource != null)
@@ -165,6 +252,7 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
             }
 
             // Trigger events
+            OnPlayerHealed?.Invoke(actualHealed);
             OnHealthChanged?.Invoke(currentHealth, maxHealth);
 
             // Update UI
@@ -172,17 +260,30 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
         }
     }
 
-    void Die()
+    public void HealToFull()
+    {
+        Heal(maxHealth - currentHealth);
+    }
+
+    #endregion
+
+    #region Death and Respawn System
+
+    private void Die()
     {
         if (isDead) return;
 
         isDead = true;
-        Debug.Log($"Player {PlayerIndex} died!");
 
-        // Play death sound
+        if (enableDebugLogs)
+        {
+            Debug.Log($"[PlayerHealthSystem] Player {PlayerIndex} died!");
+        }
+
+        // Play death audio
         PlayDeathSound();
 
-        // Trigger death event
+        // Trigger death event (GameManager will handle respawn)
         OnPlayerDeath?.Invoke();
 
         // Stop movement
@@ -191,7 +292,7 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
             rb.linearVelocity = Vector2.zero;
         }
 
-        // Disable player controls and collision
+        // Disable player controls and interaction
         SetPlayerActive(false);
 
         // Spawn death effect
@@ -201,39 +302,27 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
             Destroy(deathEffect, 3f);
         }
 
-        // Start respawn timer
-        if (respawnDelay > 0)
-        {
-            StartCoroutine(RespawnCoroutine());
-        }
-
         // Update UI
         UpdateHealthUI();
     }
 
-    IEnumerator RespawnCoroutine()
+    public void RespawnAtPosition(Vector3 position)
     {
-        yield return new WaitForSeconds(respawnDelay);
-        Respawn();
-    }
+        if (enableDebugLogs)
+        {
+            Debug.Log($"[PlayerHealthSystem] Player {PlayerIndex} respawning at position: {position}");
+        }
 
-    public void Respawn()
-    {
-        Debug.Log($"Player {PlayerIndex} respawning!");
-
-        // Reset health
+        // Reset health and state
         currentHealth = maxHealth;
         isDead = false;
         isInvulnerable = false;
 
-        // Move to respawn point
-        transform.position = respawnPoint.position;
+        // Move to respawn position
+        transform.position = position;
 
-        // Reset sprite color
-        if (playerSprite != null)
-        {
-            playerSprite.color = originalSpriteColor;
-        }
+        // Reset visual state
+        ResetVisualState();
 
         // Re-enable player
         SetPlayerActive(true);
@@ -244,11 +333,17 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
         // Update UI
         UpdateHealthUI();
 
-        // Brief invulnerability after respawn
-        StartCoroutine(InvulnerabilityCoroutine());
+        if (enableDebugLogs)
+        {
+            Debug.Log($"[PlayerHealthSystem] Player {PlayerIndex} respawn complete");
+        }
     }
 
-    void SetPlayerActive(bool active)
+    #endregion
+
+    #region Player State Management
+
+    private void SetPlayerActive(bool active)
     {
         // Enable/disable collision
         if (playerCollider != null)
@@ -256,7 +351,7 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
             playerCollider.enabled = active;
         }
 
-        // Enable/disable player controls
+        // Enable/disable player controllers
         PlayerController gunnerController = GetComponent<PlayerController>();
         Player_Melee_Controller1 meleeController = GetComponent<Player_Melee_Controller1>();
 
@@ -270,7 +365,7 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
             meleeController.enabled = active;
         }
 
-        // Set sprite transparency if dead
+        // Update sprite visibility
         if (playerSprite != null)
         {
             Color color = playerSprite.color;
@@ -279,17 +374,84 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
         }
     }
 
-    IEnumerator InvulnerabilityCoroutine()
+    private void ResetVisualState()
+    {
+        // Stop any ongoing visual effects
+        StopAllVisualEffects();
+
+        // Reset sprite color
+        if (playerSprite != null)
+        {
+            playerSprite.color = originalSpriteColor;
+        }
+    }
+
+    private void StopAllVisualEffects()
+    {
+        // Stop invulnerability effect
+        if (invulnerabilityCoroutine != null)
+        {
+            StopCoroutine(invulnerabilityCoroutine);
+            invulnerabilityCoroutine = null;
+        }
+
+        // Stop damage flash
+        if (damageFlashCoroutine != null)
+        {
+            StopCoroutine(damageFlashCoroutine);
+            damageFlashCoroutine = null;
+        }
+    }
+
+    #endregion
+
+    #region Invulnerability System
+
+    public void SetInvulnerable(bool invulnerable, float duration = 0f)
+    {
+        if (invulnerable && duration > 0f)
+        {
+            StartTemporaryInvulnerability(duration);
+        }
+        else
+        {
+            isInvulnerable = invulnerable;
+
+            if (!invulnerable)
+            {
+                StopInvulnerabilityEffects();
+            }
+        }
+    }
+
+    private void StartInvulnerability()
+    {
+        SetInvulnerable(true, invulnerabilityTime);
+    }
+
+    private void StartTemporaryInvulnerability(float duration)
+    {
+        if (invulnerabilityCoroutine != null)
+        {
+            StopCoroutine(invulnerabilityCoroutine);
+        }
+
+        invulnerabilityCoroutine = StartCoroutine(InvulnerabilityCoroutine(duration));
+    }
+
+    private IEnumerator InvulnerabilityCoroutine(float duration)
     {
         isInvulnerable = true;
 
         // Flash effect during invulnerability
         float flashTimer = 0f;
-        while (flashTimer < invulnerabilityTime)
+        const float flashSpeed = 10f;
+
+        while (flashTimer < duration)
         {
-            if (playerSprite != null)
+            if (playerSprite != null && !isDead)
             {
-                float alpha = Mathf.PingPong(flashTimer * 10f, 1f);
+                float alpha = Mathf.PingPong(flashTimer * flashSpeed, 1f);
                 Color color = originalSpriteColor;
                 color.a = 0.5f + (alpha * 0.5f);
                 playerSprite.color = color;
@@ -299,40 +461,67 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
             yield return null;
         }
 
-        // Restore original color
-        if (playerSprite != null)
+        // End invulnerability
+        isInvulnerable = false;
+        StopInvulnerabilityEffects();
+
+        invulnerabilityCoroutine = null;
+    }
+
+    private void StopInvulnerabilityEffects()
+    {
+        if (playerSprite != null && !isDead)
         {
             playerSprite.color = originalSpriteColor;
         }
-
-        isInvulnerable = false;
     }
 
-    IEnumerator DamageFlash()
+    #endregion
+
+    #region Visual Effects
+
+    private void StartDamageFlash()
+    {
+        if (damageFlashCoroutine != null)
+        {
+            StopCoroutine(damageFlashCoroutine);
+        }
+
+        damageFlashCoroutine = StartCoroutine(DamageFlashCoroutine());
+    }
+
+    private IEnumerator DamageFlashCoroutine()
     {
         if (playerSprite != null)
         {
+            Color originalColor = playerSprite.color;
             playerSprite.color = damageFlashColor;
+
             yield return new WaitForSeconds(flashDuration);
 
-            if (!isInvulnerable) // Don't restore if invulnerability flashing is active
+            // Only restore color if not in invulnerability state
+            if (!isInvulnerable && !isDead)
             {
-                playerSprite.color = originalSpriteColor;
+                playerSprite.color = originalColor;
             }
         }
+
+        damageFlashCoroutine = null;
     }
 
-    void ShowDamageText(int damage)
+    private void ShowDamageText(int damage)
     {
         if (damageTextPrefab != null)
         {
-            GameObject damageText = Instantiate(damageTextPrefab, transform.position + Vector3.up, Quaternion.identity);
+            Vector3 spawnPos = transform.position + Vector3.up * 1.5f;
+            GameObject damageText = Instantiate(damageTextPrefab, spawnPos, Quaternion.identity);
 
-            // Try to set damage amount if the prefab has a Text component
+            // Try to set damage amount
             Text textComponent = damageText.GetComponent<Text>();
             if (textComponent != null)
             {
                 textComponent.text = $"-{damage}";
+                textComponent.color = Color.red;
             }
 
             // Auto-destroy damage text
@@ -340,23 +529,51 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
         }
     }
 
-    void UpdateHealthUI()
+    #endregion
+
+    #region Audio System
+
+    private void PlayHurtSound()
+    {
+        if (hurtSounds != null && hurtSounds.Length > 0 && audioSource != null)
+        {
+            AudioClip hurtClip = hurtSounds[Random.Range(0, hurtSounds.Length)];
+            if (hurtClip != null)
+            {
+                audioSource.PlayOneShot(hurtClip, hurtVolume);
+            }
+        }
+    }
+
+    private void PlayDeathSound()
+    {
+        if (deathSounds != null && deathSounds.Length > 0 && audioSource != null)
+        {
+            AudioClip deathClip = deathSounds[Random.Range(0, deathSounds.Length)];
+            if (deathClip != null)
+            {
+                audioSource.PlayOneShot(deathClip, deathVolume);
+            }
+        }
+    }
+
+    #endregion
+
+    #region UI System
+
+    private void UpdateHealthUI()
     {
         // Update health bar
         if (healthBar != null)
         {
-            float healthPercentage = (float)currentHealth / maxHealth;
+            float healthPercentage = HealthPercentage;
             healthBar.value = healthPercentage;
 
-            // Update health bar color based on health percentage
+            // Update health bar color
             if (healthBarFill != null)
             {
-                if (healthPercentage > 0.6f)
-                    healthBarFill.color = healthyColor;
-                else if (healthPercentage > 0.3f)
-                    healthBarFill.color = damagedColor;
-                else
-                    healthBarFill.color = criticalColor;
+                Color barColor = GetHealthColor(healthPercentage);
+                healthBarFill.color = barColor;
             }
         }
 
@@ -365,83 +582,135 @@ public class PlayerHealthSystem : MonoBehaviour, IDamageable
         {
             healthText.text = $"{currentHealth}/{maxHealth}";
 
-            // Change text color based on health
-            float healthPercentage = (float)currentHealth / maxHealth;
-            if (healthPercentage > 0.6f)
-                healthText.color = healthyColor;
-            else if (healthPercentage > 0.3f)
-                healthText.color = damagedColor;
-            else
-                healthText.color = criticalColor;
+            // Update text color
+            float healthPercentage = HealthPercentage;
+            Color textColor = GetHealthColor(healthPercentage);
+            healthText.color = textColor;
         }
     }
 
-    void PlayHurtSound()
+    private Color GetHealthColor(float healthPercentage)
     {
-        if (hurtSounds.Length > 0 && audioSource != null)
-        {
-            AudioClip hurtClip = hurtSounds[Random.Range(0, hurtSounds.Length)];
-            audioSource.PlayOneShot(hurtClip, hurtVolume);
-        }
+        if (healthPercentage > 0.6f)
+            return healthyColor;
+        else if (healthPercentage > 0.3f)
+            return damagedColor;
+        else
+            return criticalColor;
     }
 
-    void PlayDeathSound()
-    {
-        if (deathSounds.Length > 0 && audioSource != null)
-        {
-            AudioClip deathClip = deathSounds[Random.Range(0, deathSounds.Length)];
-            audioSource.PlayOneShot(deathClip, deathVolume);
-        }
-    }
+    #endregion
 
-    // Public methods for external access
-    public bool IsAliveMethod() => !isDead;
-    public bool IsInvulnerableMethod() => isInvulnerable;
-    public float GetHealthPercentage() => (float)currentHealth / maxHealth;
+    #region Public Utility Methods
+
     public void SetMaxHealth(int newMaxHealth)
     {
+        if (newMaxHealth <= 0)
+        {
+            Debug.LogError($"[PlayerHealthSystem] Invalid max health value: {newMaxHealth}");
+            return;
+        }
+
         maxHealth = newMaxHealth;
         currentHealth = Mathf.Min(currentHealth, maxHealth);
         UpdateHealthUI();
-    }
 
-    public void SetInvulnerable(bool invulnerable, float duration = 0f)
-    {
-        if (invulnerable && duration > 0f)
+        if (enableDebugLogs)
         {
-            StartCoroutine(TemporaryInvulnerability(duration));
-        }
-        else
-        {
-            isInvulnerable = invulnerable;
+            Debug.Log($"[PlayerHealthSystem] Player {PlayerIndex} max health set to {maxHealth}");
         }
     }
 
-    IEnumerator TemporaryInvulnerability(float duration)
+    public void ModifyHealth(int amount)
     {
-        isInvulnerable = true;
-        yield return new WaitForSeconds(duration);
-        isInvulnerable = false;
+        if (amount > 0)
+        {
+            Heal(amount);
+        }
+        else if (amount < 0)
+        {
+            TakeDamage(-amount);
+        }
     }
 
-    // Debug methods
-    void OnDrawGizmosSelected()
+    public bool IsHealthFull()
     {
-        // Draw health info in scene view
+        return currentHealth >= maxHealth;
+    }
+
+    public bool IsHealthCritical(float threshold = 0.3f)
+    {
+        return HealthPercentage <= threshold;
+    }
+
+    #endregion
+
+    #region Debug Visualization
+
+    private void OnDrawGizmosSelected()
+    {
+        // Draw health status indicator
+        Vector3 pos = transform.position + Vector3.up * 2f;
+
         if (isDead)
         {
             Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(transform.position, 1f);
+            Gizmos.DrawWireSphere(pos, 0.5f);
         }
         else if (isInvulnerable)
         {
             Gizmos.color = Color.yellow;
-            Gizmos.DrawWireSphere(transform.position, 0.8f);
+            Gizmos.DrawWireSphere(pos, 0.4f);
         }
         else
         {
             Gizmos.color = Color.green;
-            Gizmos.DrawWireSphere(transform.position, 0.6f);
+            Gizmos.DrawWireSphere(pos, 0.3f);
+        }
+
+        // Draw health percentage as wire cube
+        if (Application.isPlaying)
+        {
+            float healthPercent = HealthPercentage;
+            Gizmos.color = GetHealthColor(healthPercent);
+            Vector3 healthBarSize = new Vector3(healthPercent * 2f, 0.2f, 0.2f);
+            Gizmos.DrawWireCube(pos + Vector3.up * 0.8f, healthBarSize);
         }
     }
+
+    #endregion
+
+    #region Debug Methods
+
+    [ContextMenu("Debug: Take 25 Damage")]
+    public void DebugTakeDamage()
+    {
+        TakeDamage(25f);
+    }
+
+    [ContextMenu("Debug: Heal 25 HP")]
+    public void DebugHeal()
+    {
+        Heal(25);
+    }
+
+    [ContextMenu("Debug: Kill Player")]
+    public void DebugKillPlayer()
+    {
+        TakeDamage(currentHealth);
+    }
+
+    [ContextMenu("Debug: Full Heal")]
+    public void DebugFullHeal()
+    {
+        HealToFull();
+    }
+
+    [ContextMenu("Debug: Toggle Invulnerability")]
+    public void DebugToggleInvulnerability()
+    {
+        SetInvulnerable(!isInvulnerable, isInvulnerable ? 0f : 5f);
+    }
+
+    #endregion
 }
